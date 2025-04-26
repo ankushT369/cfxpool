@@ -7,14 +7,40 @@
 #include "fxsys.h"
 
 
-uchar* fxpool_aligned_alloc(size_t size, uchar alignment, size_t* real_alloc_size) 
+
+uchar* fxpool_aligned_alloc(size_t size, uchar alignment, fx_pool* mp) 
 {
+        /* Small allocation (aligned heap memory) */
+        mp->_pool_size = size;
+
+        #if defined(_MSC_VER)
+                return _aligned_malloc(size, alignment);
+        #elif defined(__unix__) || defined(__APPLE__)
+                void* ptr = NULL;
+                if (posix_memalign(&ptr, alignment, size) != 0)
+                        return NULL;
+                return (uchar*)ptr;
+        #elif defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
+                return aligned_alloc(alignment, size);
+        #else
+                /* Manual fallback */
+                void* p1;
+                void** p2;
+                size_t offset = alignment - 1 + sizeof(void*);
+                p1 = malloc(size + offset);
+                if (p1 == NULL) return NULL;
+                p2 = (void**)(((uintptr_t)p1 + offset) & ~(alignment - 1));
+                p2[-1] = p1;
+                return p2;
+        #endif
+
+        /*
         if (_sysinfo.page_size == 0)
                 init_system_info();  // Ensure page size is known
 
         if (size >= _sysinfo.page_size) 
         {
-                /* Big allocation (use mmap or VirtualAlloc) */
+                // Big allocation (use mmap or VirtualAlloc) 
                 *real_alloc_size = round_up_to_page(size, _sysinfo.page_size);
         
                 #if defined(_WIN32) || defined (_WIN64)
@@ -26,30 +52,8 @@ uchar* fxpool_aligned_alloc(size_t size, uchar alignment, size_t* real_alloc_siz
         } 
         else 
         {
-                /* Small allocation (aligned heap memory) */
-                *real_alloc_size = size;
-
-                #if defined(_MSC_VER)
-                        return _aligned_malloc(size, alignment);
-                #elif defined(__unix__) || defined(__APPLE__)
-                        void* ptr = NULL;
-                        if (posix_memalign(&ptr, alignment, size) != 0)
-                                return NULL;
-                        return ptr;
-                #elif defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
-                        return aligned_alloc(alignment, size);
-                #else
-                        /* Manual fallback */
-                        void* p1;
-                        void** p2;
-                        size_t offset = alignment - 1 + sizeof(void*);
-                        p1 = malloc(size + offset);
-                        if (p1 == NULL) return NULL;
-                        p2 = (void**)(((uintptr_t)p1 + offset) & ~(alignment - 1));
-                        p2[-1] = p1;
-                        return p2;
-                #endif
         }
+        */
 }
 
 
@@ -60,8 +64,6 @@ fx_error fxpool_create(size_t each_blk_size, data_unit unit, uint_fast32_t total
                 pr_err("fxpool_create: alignment value %u is not valid. Memory alignment check failed.\n", align);
                 return FX_RES_ALIGNED;
         }
-
-        // pr_debug("");
 
         if (each_blk_size == 0 || each_blk_size > (1ULL << 48)) 
         {
@@ -85,7 +87,7 @@ fx_error fxpool_create(size_t each_blk_size, data_unit unit, uint_fast32_t total
         mp->_each_blk_size = each_blk_size;
         
         /* Pool Allocation */
-        uchar* mem_start = fxpool_aligned_alloc(TO_BYTES(each_blk_size, unit) * total_blk, align);
+        uchar* mem_start = fxpool_aligned_alloc(TO_BYTES(each_blk_size, unit) * total_blk, align, mp);
         if(mem_start == NULL)
         {
                 pr_err("fxpool_create: memory allocation failed. Unable to allocate %zu bytes with alignment %u.\nStdError: %s\n",
@@ -99,3 +101,12 @@ fx_error fxpool_create(size_t each_blk_size, data_unit unit, uint_fast32_t total
         return FX_RES_OK;
 }
 
+void fxpool_destroy()
+{
+
+}
+
+void fxpool_create_large_pool()
+{
+
+}

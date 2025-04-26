@@ -1,6 +1,10 @@
 #ifndef __FX_POOL__
 #define __FX_POOL__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <inttypes.h>
 #include <stdlib.h>
 
@@ -54,10 +58,16 @@ typedef struct fx_pool
 
 
 fx_error fxpool_create(size_t, data_unit, uint_fast32_t, uchar, fx_pool*);
+void fxpool_create_large_pool();
 void fxpool_alloc();
 void fxpool_dealloc();
 void fxpool_destroy();
+void fxpool_destroy_large_pool();
 void fxpool_merge();
 void fxpool_transfer();
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // __FM_POOL__

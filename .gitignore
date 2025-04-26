@@ -38,6 +38,7 @@ build/
 *.i*86
 *.x86_64
 *.hex
+test/test_program
 
 # Debug files
 *.dSYM/
