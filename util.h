@@ -20,14 +20,14 @@ static inline int is_aligned(uint_fast8_t n)
     return is_power_of_2(n) && (n >= 4 && n <= 64);
 }
 
-static inline uchar* index_from_addr(uint_fast32_t index, fx_pool fp)
+static inline uchar* addr_from_index(uint_fast32_t index, fx_pool* fp)
 {
-        return fp._mem_start + (index * fp._each_blk_size);
+        return fp->_mem_start + (index * fp->_each_blk_size);
 }
 
-static inline uint32_t addr_from_index(const uchar* addr, fx_pool fp)
+static inline uint32_t index_from_addr(const uchar* addr, fx_pool* fp)
 {
-        return (((uint_fast32_t)(addr - fp._mem_start)) / fp._each_blk_size);
+        return (((uint_fast32_t)(addr - fp->_mem_start)) / fp->_each_blk_size);
 }
 
 static inline uint_fast32_t align_memory(uint_fast32_t size, uint_fast8_t alignment)

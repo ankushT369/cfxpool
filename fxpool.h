@@ -62,8 +62,8 @@ typedef struct fx_pool
 
 fx_error fxpool_create(size_t, data_unit, uint_fast32_t, uchar, fx_pool*);
 fx_error fxpool_create_large_pool();
-void fxpool_alloc();
-void fxpool_dealloc();
+void* fxpool_alloc(fx_pool*);
+void fxpool_dealloc(void*, fx_pool*);
 fx_error fxpool_destroy(fx_pool*);
 void fxpool_destroy_large_pool();
 void fxpool_merge();

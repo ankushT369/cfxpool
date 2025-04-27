@@ -122,24 +122,24 @@ fx_error fxpool_create(size_t each_blk_size, data_unit unit, uint_fast32_t total
 
         size_t aligned_size = align_memory(each_blk_size, align);
 
-        if (aligned_size != each_blk_size)
-                pr_warn("fxpool_create: memory block size %zu rounded up to %zu to match alignment %u.\n", each_blk_size, 
-                                aligned_size, align);
+        if (aligned_size != each_blk_size) {}
+                //pr_warn("fxpool_create: memory block size %zu rounded up to %zu to match alignment %u.\n", each_blk_size, 
+                 //               aligned_size, align);
 
 
         mp->_total_blk          = total_blk;
-        mp->_each_blk_size      = each_blk_size;
+        mp->_each_blk_size      = aligned_size;
         
         /* Pool Allocation */
         uchar* mem_start = fxpool_aligned_alloc(TO_BYTES(each_blk_size, unit) * total_blk, align);
-        if(mem_start == NULL)
+        if (mem_start == NULL)
         {
                 pr_err("fxpool_create: memory allocation failed. Unable to allocate %zu bytes with alignment %u.\nStdError: %s\n",
                                 TO_BYTES(each_blk_size, unit) * total_blk, align, strerror(errno));
                 return FX_RES_MEMORY;
         }
 
-        mp->_free_blk           = 0;
+        mp->_free_blk           = total_blk;
         mp->_next_blk           = mem_start;
         mp->_pool_size          = TO_BYTES(each_blk_size, unit) * total_blk;
         mp->_mem_start          = mem_start;
@@ -150,7 +150,7 @@ fx_error fxpool_create(size_t each_blk_size, data_unit unit, uint_fast32_t total
 
 fx_error fxpool_destroy(fx_pool* mp)
 {
-        if(mp == NULL)
+        if (mp == NULL)
         {
                 pr_err("fxpool_destroy: pool pointer is NULL. Cannot destroy a non-existent pool.\n");
                 return FX_RES_PARAM;           
@@ -166,6 +166,52 @@ fx_error fxpool_destroy(fx_pool* mp)
                 pr_warn("fxpool_destroy: pool memory already NULL. Nothing to free.\n");
 
         return FX_RES_OK;
+}
+
+void* fxpool_alloc(fx_pool* mp)
+{
+        if (mp->_initalized_blk < mp->_total_blk) 
+        {
+                uint_fast32_t* p = (uint_fast32_t*)addr_from_index(mp->_initalized_blk, mp);
+                *p = mp->_initalized_blk + 1;
+                mp->_initalized_blk++;
+        }
+
+        void* ret = NULL;
+        if (mp->_free_blk > 0)
+        {
+                ret = (void*)mp->_next_blk;
+                --mp->_free_blk;
+                if (mp->_free_blk != 0) {
+                        mp->_next_blk = addr_from_index(*((uint_fast32_t*)mp->_next_blk), mp);
+                }
+                else {
+                        mp->_next_blk = NULL;
+                }
+        }
+        //printf("0x%lx\n", (uintptr_t)ret);
+
+        if (ret == NULL)
+        {
+                //pr_err();
+        }
+
+        return ret;
+}
+
+void fxpool_dealloc(void* ptr, fx_pool* mp)
+{
+        if (mp->_next_blk != NULL)
+        {
+                (*(uint_fast32_t*)ptr) = index_from_addr(mp->_next_blk, mp);
+                mp->_next_blk = (uchar*)ptr;
+        }
+        else 
+        {
+                (*(uint_fast32_t*)ptr) = mp->_total_blk;
+                mp->_next_blk = (uchar*)ptr;
+        }
+        ++mp->_free_blk;
 }
 
 fx_error fxpool_create_large_pool()

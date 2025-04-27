@@ -1,38 +1,39 @@
 #include <benchmark/benchmark.h>
 #include "../fxpool.h"
 
-fx_pool pool;
-static void BM_fxpool_create(benchmark::State& state)
+static void BM_fxpool_alloc(benchmark::State& state)
 {
-        size_t ebs = 1000;
-        data_unit unit = KB;
-        uint_fast32_t tblk = 2000;
+        fx_pool pool;
+        size_t ebs = state.range(0);
+        data_unit unit = MB;
+        uint_fast32_t tblk = state.range(1);
         uchar align = 8;
 
+        fx_error err = fxpool_create(ebs, unit, tblk, align, &pool);
         for (auto _ : state) {
-                if (state.iterations() == 50) {
-                        fx_error err = fxpool_create(ebs, unit, tblk, align, &pool);
-                        benchmark::DoNotOptimize(err);
-                        fxpool_destroy(&pool);
-                }       
+                void* ptr = fxpool_alloc(&pool);
+                benchmark::DoNotOptimize(ptr);
+                fxpool_dealloc(ptr, &pool);
         }
+
+        fxpool_destroy(&pool);
 }
-BENCHMARK(BM_fxpool_create);
+BENCHMARK(BM_fxpool_alloc)->Args({72, 100})->Args({128, 10}); 
+
 
 static void BM_malloc(benchmark::State& state) 
 {
-        size_t each_blk_size = 1000 * 1024;
-        uint_fast32_t total_blk = 2000;
+        size_t each_blk_size = state.range(0);
+        uint_fast32_t total_blk = state.range(1);
 
         for (auto _ : state) {
-                if (state.iterations() == 50) {
-                        void* ptr = malloc(each_blk_size * total_blk);
-                        benchmark::DoNotOptimize(ptr);
+                void* ptr = malloc(each_blk_size);
+                benchmark::DoNotOptimize(ptr);
                 free(ptr);
-                }
         }
 }
-BENCHMARK(BM_malloc);
+BENCHMARK(BM_malloc)->Args({72 * 1024 * 1024, 100})->Args({128, 10});
+
 
 BENCHMARK_MAIN();
 
