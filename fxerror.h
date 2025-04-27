@@ -32,6 +32,7 @@ typedef enum fx_error
         FX_RES_ALIGNED,
 } fx_error;
 
+
 /*
  * fx_error_str - Convert an fx_error code into a human-readable string.
  *

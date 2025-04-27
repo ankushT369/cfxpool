@@ -8,7 +8,7 @@
 typedef unsigned char uchar;
 
 #define TO_BYTES(x, unit) ((x) << (unit))
-
+#define ERR_PTR(err)  ((void *)(uintptr_t)(err))
 
 static inline int is_power_of_2(uint_fast8_t n)
 {
