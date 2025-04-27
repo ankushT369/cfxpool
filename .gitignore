@@ -40,7 +40,6 @@ build/
 *.hex
 test/test_program
 benchmark/benchmark
-examples/exec
 
 # Debug files
 *.dSYM/
