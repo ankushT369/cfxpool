@@ -225,5 +225,5 @@ fx_error fxpool_dealloc(void* ptr, fx_pool* mp)
 
 fx_error fxpool_create_large_pool()
 {
-        return err_buffer = FX_RES_UNIMPL;
+        return FX_RES_UNIMPL;
 }
