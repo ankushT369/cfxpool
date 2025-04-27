@@ -39,6 +39,8 @@ build/
 *.x86_64
 *.hex
 test/test_program
+benchmark/benchmark
+examples/exec
 
 # Debug files
 *.dSYM/
@@ -54,3 +56,5 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+
+main.c

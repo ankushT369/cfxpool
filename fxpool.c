@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
 #include "fxpool.h"
 #include "fxlog.h"
@@ -7,32 +8,60 @@
 #include "fxsys.h"
 
 
-
-uchar* fxpool_aligned_alloc(size_t size, uchar alignment, fx_pool* mp) 
+void fxpool_log(fx_pool* pool)
 {
-        /* Small allocation (aligned heap memory) */
-        mp->_pool_size = size;
+        if (pool == NULL) 
+        {
+                pr_err("Error: NULL pointer passed to fx_pool_dump\n");
+                return;
+        }
+    
+        pr_debug("fx_pool Structure:\n");
+        pr_debug("   total_blk:            %" PRIuFAST32 "\n", pool->_total_blk);
+        pr_debug("   each_blk_size:        %" PRIuFAST32 " %s\n", pool->_each_blk_size, unit_strings[pool->_unit / 10]);
+        pr_debug("   free_blk:             %" PRIuFAST32 "\n", pool->_free_blk);
+        pr_debug("   initalized_blk:       %" PRIuFAST32 "\n", pool->_initalized_blk);
+        pr_debug("   pool_size(bytes):     %" PRIuFAST64 "\n", pool->_pool_size);
 
-        #if defined(_MSC_VER)
-                return _aligned_malloc(size, alignment);
-        #elif defined(__unix__) || defined(__APPLE__)
-                void* ptr = NULL;
-                if (posix_memalign(&ptr, alignment, size) != 0)
-                        return NULL;
-                return (uchar*)ptr;
-        #elif defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
-                return aligned_alloc(alignment, size);
-        #else
-                /* Manual fallback */
-                void* p1;
-                void** p2;
-                size_t offset = alignment - 1 + sizeof(void*);
-                p1 = malloc(size + offset);
-                if (p1 == NULL) return NULL;
-                p2 = (void**)(((uintptr_t)p1 + offset) & ~(alignment - 1));
-                p2[-1] = p1;
-                return p2;
-        #endif
+        // Printing addresses of pointers
+        pr_debug("   mem_start:            0x%p\n", (void*)pool->_mem_start);
+        pr_debug("   next_blk:             0x%p\n", (void*)pool->_next_blk);
+}
+
+void init_fxpool(fx_pool* pool)
+{
+        pool->_total_blk        = 0; 
+        pool->_each_blk_size    = 0; 
+        pool->_free_blk         = 0;
+        pool->_initalized_blk   = 0;
+        pool->_pool_size        = 0;
+        pool->_mem_start        = NULL;
+        pool->_next_blk         = NULL;
+        pool->_unit             = B;
+}
+
+uchar* fxpool_aligned_alloc(size_t size, uchar alignment) 
+{
+#if defined(_MSC_VER)
+        return _aligned_malloc(size, alignment);
+#elif defined(__unix__) || defined(__APPLE__)
+        void* ptr = NULL;
+        if (posix_memalign(&ptr, alignment, size) != 0)
+                return NULL;
+        return (uchar*)ptr;
+#elif defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
+        return aligned_alloc(alignment, size);
+#else
+        /* Manual fallback */
+        void* p1;
+        void** p2;
+        size_t offset = alignment - 1 + sizeof(void*);
+        p1 = malloc(size + offset);
+        if (p1 == NULL) return NULL;
+        p2 = (void**)(((uintptr_t)p1 + offset) & ~(alignment - 1));
+        p2[-1] = p1;
+        return p2;
+#endif
 
         /*
         if (_sysinfo.page_size == 0)
@@ -56,6 +85,20 @@ uchar* fxpool_aligned_alloc(size_t size, uchar alignment, fx_pool* mp)
         */
 }
 
+void fxpool_aligned_free(uchar* ptr)
+{
+        if (ptr == NULL)
+                return;
+#if defined(_MSC_VER)
+        _aligned_free(ptr);
+#elif defined(__unix__) || defined(__APPLE__)
+        free(ptr);  // Standard free
+#elif defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
+        free(ptr);  // Same for aligned_alloc/free
+#else
+        free(((void**)ptr)[-1]);  // Fallback to manual free
+#endif
+}
 
 fx_error fxpool_create(size_t each_blk_size, data_unit unit, uint_fast32_t total_blk, uchar align, fx_pool* mp) 
 {
@@ -78,35 +121,54 @@ fx_error fxpool_create(size_t each_blk_size, data_unit unit, uint_fast32_t total
         }
 
         size_t aligned_size = align_memory(each_blk_size, align);
-        if (aligned_size != each_blk_size) 
+
+        if (aligned_size != each_blk_size)
                 pr_warn("fxpool_create: memory block size %zu rounded up to %zu to match alignment %u.\n", each_blk_size, 
                                 aligned_size, align);
 
 
-        mp->_total_blk = total_blk;
-        mp->_each_blk_size = each_blk_size;
+        mp->_total_blk          = total_blk;
+        mp->_each_blk_size      = each_blk_size;
         
         /* Pool Allocation */
-        uchar* mem_start = fxpool_aligned_alloc(TO_BYTES(each_blk_size, unit) * total_blk, align, mp);
+        uchar* mem_start = fxpool_aligned_alloc(TO_BYTES(each_blk_size, unit) * total_blk, align);
         if(mem_start == NULL)
         {
                 pr_err("fxpool_create: memory allocation failed. Unable to allocate %zu bytes with alignment %u.\nStdError: %s\n",
-                                TO_BYTES(each_blk_size, unit), align, strerror(errno));
+                                TO_BYTES(each_blk_size, unit) * total_blk, align, strerror(errno));
                 return FX_RES_MEMORY;
         }
 
-        mp->_free_blk = 0;
-        mp->_next_blk = mp->_mem_start;
+        mp->_free_blk           = 0;
+        mp->_next_blk           = mem_start;
+        mp->_pool_size          = TO_BYTES(each_blk_size, unit) * total_blk;
+        mp->_mem_start          = mem_start;
+        mp->_unit               = unit;
 
         return FX_RES_OK;
 }
 
-void fxpool_destroy()
+fx_error fxpool_destroy(fx_pool* mp)
 {
+        if(mp == NULL)
+        {
+                pr_err("fxpool_destroy: pool pointer is NULL. Cannot destroy a non-existent pool.\n");
+                return FX_RES_PARAM;           
+        }
 
+        if (mp->_mem_start != NULL)
+        {
+
+                fxpool_aligned_free(mp->_mem_start);
+                mp->_mem_start = NULL;
+        }
+        else
+                pr_warn("fxpool_destroy: pool memory already NULL. Nothing to free.\n");
+
+        return FX_RES_OK;
 }
 
-void fxpool_create_large_pool()
+fx_error fxpool_create_large_pool()
 {
-
+        return FX_RES_UNIMPL;
 }

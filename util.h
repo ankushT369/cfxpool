@@ -9,6 +9,7 @@ typedef unsigned char uchar;
 
 #define TO_BYTES(x, unit) ((x) << (unit))
 
+
 static inline int is_power_of_2(uint_fast8_t n)
 {
     return (n > 0) && ((n & (n - 1)) == 0);

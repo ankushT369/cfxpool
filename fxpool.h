@@ -24,12 +24,14 @@ typedef enum alignment_t
 
 typedef enum data_unit
 {
-        B = 1,
+        B = 0,
         KB = 10,
         MB = 20,
         GB = 30,
         TB = 40,
 } data_unit;
+
+static const char* unit_strings[] = {"bytes", "KB", "MB", "GB", "TB"};
 
 /*
  * Struct pool_alloc is used to store the state of the 
@@ -54,17 +56,19 @@ typedef struct fx_pool
         uint_fast64_t   _pool_size;
         uchar*          _mem_start;
         uchar*          _next_blk; 
+        data_unit       _unit;
 } fx_pool;
 
 
 fx_error fxpool_create(size_t, data_unit, uint_fast32_t, uchar, fx_pool*);
-void fxpool_create_large_pool();
+fx_error fxpool_create_large_pool();
 void fxpool_alloc();
 void fxpool_dealloc();
-void fxpool_destroy();
+fx_error fxpool_destroy(fx_pool*);
 void fxpool_destroy_large_pool();
 void fxpool_merge();
 void fxpool_transfer();
+void fxpool_log(fx_pool*);
 
 #ifdef __cplusplus
 }

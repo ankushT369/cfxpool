@@ -1,7 +1,5 @@
 #include "fxsys.h"
 
-
-
 sysinfo _sysinfo;
 
 void init_system_info()
