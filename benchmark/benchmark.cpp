@@ -5,7 +5,7 @@ static void BM_fxpool_alloc(benchmark::State& state)
 {
         fx_pool pool;
         size_t ebs = state.range(0);
-        data_unit unit = MB;
+        data_unit unit = KB;
         uint_fast32_t tblk = state.range(1);
         uchar align = 8;
 
@@ -18,7 +18,7 @@ static void BM_fxpool_alloc(benchmark::State& state)
 
         fxpool_destroy(&pool);
 }
-BENCHMARK(BM_fxpool_alloc)->Args({72, 100})->Args({128, 10}); 
+BENCHMARK(BM_fxpool_alloc)->Args({37, 1000})->Args({128, 10})->Args({49, 100}); 
 
 
 static void BM_malloc(benchmark::State& state) 
@@ -32,7 +32,7 @@ static void BM_malloc(benchmark::State& state)
                 free(ptr);
         }
 }
-BENCHMARK(BM_malloc)->Args({72 * 1024 * 1024, 100})->Args({128, 10});
+BENCHMARK(BM_malloc)->Args({37 * 1024, 100})->Args({128 * 1024, 10})->Args({49 * 1024, 100});
 
 
 BENCHMARK_MAIN();
