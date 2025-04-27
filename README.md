@@ -1,6 +1,6 @@
 # cfxpool
 
-cfxpool is a **fast and lightweight fixed-size memory pool allocator** written in Rust, ideal for high-performance and real-time applications such as:
+cfxpool is a **fast and lightweight fixed-size memory pool allocator** written in C, ideal for high-performance and real-time applications such as:
 
 - Games and game engines
 - Graphical asset systems
