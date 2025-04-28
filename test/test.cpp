@@ -20,9 +20,13 @@ TEST(fxpool_core, alloc)
 {
         void* ptr = NULL;
         fx_pool pool;
-        fxpool_create(10, KB, 200, ALIGN_16, &pool);
-        EXPECT_EQ(fxpool_alloc(NULL), ptr);
+        __fxpool__ = 0;
+        EXPECT_EQ(fxpool_alloc(&pool), ptr);
+
+        fxpool_create(16, B, 3, ALIGN_16, &pool);
         EXPECT_NE(fxpool_alloc(&pool), ptr);
+        void* ptr1 = NULL;
+        EXPECT_NE(fxpool_alloc(&pool), ptr1);
 }
 
 TEST(fxpool_core, destroy) 

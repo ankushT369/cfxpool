@@ -7,8 +7,29 @@
 
 typedef unsigned char uchar;
 
+#ifdef __GNUC__        // For GCC and Clang (Linux, macOS, etc.)
+        #define likely(x)   __builtin_expect(!!(x), 1)
+        #define unlikely(x) __builtin_expect(!!(x), 0)
+#elif defined(_MSC_VER)  // For MSVC (Windows)
+        #define likely(x)   (__assume(x), (x))
+        #define unlikely(x) (__assume(!(x)), (x)) 
+#else  // For other compilers
+        #define likely(x)   (x)
+        #define unlikely(x) (x)
+#endif
+
+
+// Macro to set the 0th bit to 1
+#define SET_BIT(bf)   ((bf) |= 1U)
+
+// Macro to check if the 0th bit is set (1) or not (0)
+#define CHECK_BIT(bf) (((bf) & 1U) != 0)
+
+// Macro to clear the 0th bit (set it to 0)
+#define CLEAR_BIT(bf) ((bf) &= ~1U)
+
 #define TO_BYTES(x, unit) ((x) << (unit))
-#define ERR_PTR(err)  ((void *)(uintptr_t)(err))
+
 
 static inline int is_power_of_2(uint_fast8_t n)
 {
