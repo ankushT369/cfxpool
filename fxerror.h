@@ -2,21 +2,22 @@
 #define __FX_ERROR__
 
 /*
- * Enum fx_error defines various error codes
- * that can occur in the system. Each code represents
- * a different category of failure or exceptional condition.
+ * Enum fx_error defines error codes for various
+ * failures or exceptional situations in the system.
  *
  * Members:
- * - FX_RES_OK:             No error; operation successful.
- * - FX_RES_FAIL:           General failure.
- * - FX_RES_IO:             Input/Output error occurred.
- * - FX_RES_LIMIT:          A resource or operational limit was exceeded.
- * - FX_RES_MEMORY:         Memory allocation failed or insufficient memory.
- * - FX_RES_RESOURCE:       Other resource-related failure.
- * - FX_RES_UNIMPL:         Requested feature is not implemented.
- * - FX_RES_COMMIT_LIMIT:   Commit limit for resources reached.
- * - FX_RES_PARAM:          Invalid parameter passed to function.
- * - FX_RES_ALIGNED:        Memory alignment error.
+ * - FX_RES_OK:                 No error; operation successful.
+ * - FX_RES_FAIL:               General failure.
+ * - FX_RES_IO:                 Input/Output error occurred.
+ * - FX_RES_LIMIT:              A limit (like memory or resource limit) was exceeded.
+ * - FX_RES_MEMORY:             Memory allocation failed or not enough memory available.
+ * - FX_RES_RESOURCE:           Failure related to other system resources.
+ * - FX_RES_UNIMPL:             Requested feature is not implemented yet.
+ * - FX_RES_COMMIT_LIMIT:       Resource commit limit (e.g., memory commit) reached.
+ * - FX_RES_PARAM:              Invalid parameter provided to a function.
+ * - FX_RES_ALIGNED:            Memory alignment check failed.
+ * - FX_RES_BLK_SIZE:           Invalid block size specified for memory pool.
+ * - FX_RES_TOTAL_BLK:             Invalid number of blocks specified for memory pool.
  */
 typedef enum fx_error 
 {
@@ -30,6 +31,8 @@ typedef enum fx_error
         FX_RES_COMMIT_LIMIT,
         FX_RES_PARAM,
         FX_RES_ALIGNED,
+        FX_RES_BLK_SIZE,
+        FX_RES_TOTAL_BLK,
 } fx_error;
 
 

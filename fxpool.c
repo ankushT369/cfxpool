@@ -7,7 +7,6 @@
 #include "util.h"
 #include "fxsys.h"
 
-
 uint_fast32_t __fxpool__ = 0;
 
 void fxpool_log(fx_pool* pool)
@@ -24,8 +23,6 @@ void fxpool_log(fx_pool* pool)
         pr_debug("   free_blk:             %" PRIuFAST32 "\n", pool->_free_blk);
         pr_debug("   initalized_blk:       %" PRIuFAST32 "\n", pool->_initalized_blk);
         pr_debug("   pool_size(bytes):     %" PRIuFAST64 "\n", pool->_pool_size);
-
-        // Printing addresses of pointers
         pr_debug("   mem_start:            0x%p\n", (void*)pool->_mem_start);
         pr_debug("   next_blk:             0x%p\n", (void*)pool->_next_blk);
 }
@@ -38,17 +35,17 @@ void init_fxpool(fx_pool* pool)
                 return;
         }
 
-        pool->_total_blk        = 0; 
-        pool->_each_blk_size    = 0; 
-        pool->_free_blk         = 0;
-        pool->_initalized_blk   = 0;
-        pool->_pool_size        = 0;
-        pool->_mem_start        = NULL;
-        pool->_next_blk         = NULL;
-        pool->_unit             = B;
+        pool->_total_blk = 0; 
+        pool->_each_blk_size = 0; 
+        pool->_free_blk = 0;
+        pool->_initalized_blk = 0;
+        pool->_pool_size = 0;
+        pool->_mem_start = NULL;
+        pool->_next_blk = NULL;
+        pool->_unit = B;
 }
 
-uchar* fxpool_aligned_alloc(size_t size, uchar alignment) 
+inline uchar* fxpool_aligned_alloc(size_t size, uchar alignment) 
 {
 #if defined(_MSC_VER)
         return _aligned_malloc(size, alignment);
@@ -72,7 +69,7 @@ uchar* fxpool_aligned_alloc(size_t size, uchar alignment)
 #endif
 }
 
-void fxpool_aligned_free(uchar* ptr)
+inline void fxpool_aligned_free(uchar* ptr)
 {
         if (!ptr)
                 return;
@@ -88,60 +85,39 @@ void fxpool_aligned_free(uchar* ptr)
 }
 
 /*
- * Create new block.
- * Create a new big chunk of memory block, from which user allocation will be
- * taken from.
- */
+  * Create new block.
+  * Create a new big chunk of memory block, from which user allocation will be
+  * taken from.
+  */
 fx_error fxpool_create(size_t each_blk_size, data_unit unit, uint_fast32_t total_blk, uchar align, fx_pool* mp) 
 {
         SET_BIT(__fxpool__);
 
-        init_fxpool(mp);
-        if (unlikely(!mp))
-        {
-                pr_err("fxpool_create: pool pointer is NULL. Cannot create pool.\n");
+        if (unlikely(!mp)) 
                 return FX_RES_PARAM;
-        }
 
-        if (unlikely(!is_aligned(align)))
-        {
-                pr_err("fxpool_create: alignment value %u is not valid. Memory alignment check failed.\n", 
-                                align);
+        if (unlikely(!is_aligned(align))) 
                 return FX_RES_ALIGNED;
-        }
 
         if (each_blk_size == 0 || each_blk_size > (1ULL << 48)) 
-        {
-                pr_err("fxpool_create: block size %zu is too large or zero. Possible overflow or invalid input.\n", 
-                                each_blk_size);
-                return FX_RES_PARAM;
-        }
+                return FX_RES_BLK_SIZE;
 
-        if (unlikely(total_blk == 0))
-        {
-                pr_err("fxpool_create: total number of blocks is zero. Invalid input, pool cannot be created with zero blocks.\n");
-                return FX_RES_PARAM;
-        }
+        if (unlikely(total_blk == 0)) 
+                return FX_RES_TOTAL_BLK;
 
         size_t aligned_size = align_memory(each_blk_size, align);
 
-        mp->_total_blk          = total_blk;
-        mp->_each_blk_size      = aligned_size;
+        mp->_total_blk = total_blk;
+        mp->_each_blk_size = aligned_size;
         
         /* Pool Allocation */
         uchar* mem_start = fxpool_aligned_alloc(TO_BYTES(each_blk_size, unit) * total_blk, align);
-        if (!mem_start)
-        {
-                pr_err("fxpool_create: memory allocation failed. Unable to allocate %zu bytes with alignment %u.\nStdError: %s\n",
-                                TO_BYTES(each_blk_size, unit) * total_blk, 
-                                align, 
-                                strerror(errno));
+        if (!mem_start) 
                 return FX_RES_MEMORY;
-        }
 
         mp->_free_blk           = total_blk;
         mp->_next_blk           = mem_start;
-        mp->_pool_size          = TO_BYTES(each_blk_size, unit) * total_blk;
+        mp->_pool_size          = aligned_size * total_blk;
         mp->_mem_start          = mem_start;
         mp->_unit               = unit;
 
@@ -149,55 +125,39 @@ fx_error fxpool_create(size_t each_blk_size, data_unit unit, uint_fast32_t total
 }
 
 /*
- * Destroy the pool clean all the allocated memory.
- */
+  * Destroy the pool clean all the allocated memory.
+  */
 fx_error fxpool_destroy(fx_pool* mp)
 {
-        if (unlikely(!CHECK_BIT(__fxpool__)))
-        {
-                pr_err("Memory Pool not created\n");
+        if (unlikely(!CHECK_BIT(__fxpool__))) 
                 return FX_RES_FAIL;
-        }
 
-        if (unlikely(!mp))
-        {
-                pr_err("fxpool_destroy: pool pointer is NULL. Cannot destroy a non-existent pool.\n");
+        if (unlikely(!mp)) 
                 return FX_RES_PARAM;
-        }
 
-        if (mp->_mem_start)
+        if (mp->_mem_start) 
         {
-
                 fxpool_aligned_free(mp->_mem_start);
                 mp->_mem_start = NULL;
         }
-        else
-                pr_warn("fxpool_destroy: pool memory already NULL. Nothing to free.\n");
-
         init_fxpool(mp);
         CLEAR_BIT(__fxpool__);
         return FX_RES_OK;
 }
 
-/*
- * Allocate memory chunk for user from available blocks.
- * If no space is available in all the blocks
- * a new block might be created (depending on whether the pool is allowed
- * to resize).
- */
+ /*
+  * Allocate memory chunk for user from available blocks.
+  * If no space is available in all the blocks
+  * a new block might be created (depending on whether the pool is allowed
+  * to resize).
+  */
 void* fxpool_alloc(fx_pool* mp)
 {
-        if (unlikely(!CHECK_BIT(__fxpool__)))
-        {
-                pr_err("Memory Pool not created\n");
+        if (unlikely(!CHECK_BIT(__fxpool__))) 
                 return NULL;
-        }
 
-        if (unlikely(!mp))
-        {
-                pr_err("fxpool_alloc: pool pointer is NULL or an unknown memory address. Cannot allocate a non-existent memory location.\n");
+        if (unlikely(!mp)) 
                 return NULL;
-        }
 
         if (mp->_initalized_blk < mp->_total_blk) 
         {
@@ -211,53 +171,34 @@ void* fxpool_alloc(fx_pool* mp)
         {
                 ret = (void*)mp->_next_blk;
                 --mp->_free_blk;
-                if (mp->_free_blk != 0) {
+                if (mp->_free_blk != 0) 
                         mp->_next_blk = addr_from_index(*((uint_fast32_t*)mp->_next_blk), mp);
-                }
-                else {
+                else
                         mp->_next_blk = NULL;
-                }
-        }
-
-        if (mp->_free_blk == 0)
-        {
-                /* later implement a mechanism to handle 0 free blocks */
-                pr_err("fxpool_alloc: No free blocks available in the memory pool or in that memory location. Allocation failed.\n");
-                return NULL;
-        }
-
-        if (!ret)
-        {
-                pr_err("fxpool_alloc: No free blocks available in the memory pool or in that memory location. Allocation failed.\n");
-                return NULL;
         }
 
         return ret;
 }
 
-/*
- * Dellocate the block.
- */
+ /*
+  * Dellocate the block.
+  */
 fx_error fxpool_dealloc(void* ptr, fx_pool* mp)
 {
-        if (unlikely(!CHECK_BIT(__fxpool__)))
-        {
-                pr_err("Memory Pool not created\n");
+        if (unlikely(!CHECK_BIT(__fxpool__))) 
                 return FX_RES_FAIL;
-        }
 
-        if (unlikely(!mp))
-        {
-                pr_err("fxpool_dealloc: pool pointer is NULL or an unknown memory address. Cannot dellocate a non-existent memory location.\n");
+        if (unlikely(!mp)) 
                 return FX_RES_PARAM;
-        }
 
-        if (mp->_next_blk != NULL)
+        if (unlikely(!ptr)) 
+                return FX_RES_PARAM;
+
+        if (mp->_next_blk) 
         {
                 (*(uint_fast32_t*)ptr) = index_from_addr(mp->_next_blk, mp);
                 mp->_next_blk = (uchar*)ptr;
-        }
-        else 
+        } else 
         {
                 (*(uint_fast32_t*)ptr) = mp->_total_blk;
                 mp->_next_blk = (uchar*)ptr;
@@ -268,26 +209,19 @@ fx_error fxpool_dealloc(void* ptr, fx_pool* mp)
 }
 
 /*
- * Reset the pool to the state when it was created.
- */
+  * Reset the pool to the state when it was created.
+  */
 fx_error fxpool_reset(fx_pool* mp)
 {
-        if (unlikely(!mp))
-        {
-                pr_err("fxpool_reset: pool pointer is NULL or an unknown memory address. Cannot reset a non-existent memory location\n");
+        if (unlikely(!mp)) 
                 return FX_RES_PARAM;
-        }
 
-        mp->_total_blk        = 0; 
-        mp->_each_blk_size    = 0; 
-        mp->_free_blk         = 0;
-        mp->_initalized_blk   = 0;
-        mp->_next_blk         = mp->_mem_start;
+        mp->_total_blk          = 0; 
+        mp->_each_blk_size      = 0; 
+        mp->_free_blk           = 0;
+        mp->_initalized_blk     = 0;
+        mp->_next_blk           = mp->_mem_start;
 
         return FX_RES_OK;
 }
 
-fx_error fxpool_create_large_pool()
-{
-        return FX_RES_UNIMPL;
-}
