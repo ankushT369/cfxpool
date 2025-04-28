@@ -12,7 +12,7 @@ void fxpool_log(fx_pool* pool)
 {
         if (!pool) 
         {
-                pr_err("Error: NULL pointer passed to fx_pool_dump\n");
+                pr_err("Error: NULL pointer passed to fxpool_log\n");
                 return;
         }
     
@@ -30,6 +30,12 @@ void fxpool_log(fx_pool* pool)
 
 void init_fxpool(fx_pool* pool)
 {
+        if (!pool) 
+        {
+                pr_err("Error: NULL pointer passed to init_fxpool\n");
+                return;
+        }
+
         pool->_total_blk        = 0; 
         pool->_each_blk_size    = 0; 
         pool->_free_blk         = 0;
@@ -102,6 +108,12 @@ void fxpool_aligned_free(uchar* ptr)
 
 fx_error fxpool_create(size_t each_blk_size, data_unit unit, uint_fast32_t total_blk, uchar align, fx_pool* mp) 
 {
+        if (!mp)
+        {
+                pr_err("fxpool_create: pool pointer is NULL. Cannot create pool.\n");
+                return FX_RES_PARAM;
+        }
+
         if (!is_aligned(align))
         {
                 pr_err("fxpool_create: alignment value %u is not valid. Memory alignment check failed.\n", align);
@@ -205,7 +217,7 @@ fx_error fxpool_dealloc(void* ptr, fx_pool* mp)
         if (!mp)
         {
                 pr_err("fxpool_dealloc: pool pointer is NULL or an unknown memory address. Cannot dellocate a non-existent memory location.\n");
-                return FX_RES_LIMIT;
+                return FX_RES_PARAM;
         }
 
         if (mp->_next_blk != NULL)

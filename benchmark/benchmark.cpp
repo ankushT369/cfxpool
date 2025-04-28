@@ -32,7 +32,7 @@ static void BM_malloc(benchmark::State& state)
                 free(ptr);
         }
 }
-BENCHMARK(BM_malloc)->Args({37 * 1024, 100})->Args({128 * 1024, 10})->Args({49 * 1024, 100});
+BENCHMARK(BM_malloc)->Args({37 * 1024, 1000})->Args({128 * 1024, 10})->Args({49 * 1024, 100});
 
 
 BENCHMARK_MAIN();
