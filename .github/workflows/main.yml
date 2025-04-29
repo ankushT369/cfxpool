@@ -37,4 +37,4 @@ jobs:
       run: gcc -I. example/main.c -o example/program.exe -Lbuild -lcfx
 
     - name: Run the example program
-      run: ./example/program.exe
+      run: .\example\program.exe
