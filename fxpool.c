@@ -83,7 +83,7 @@ void init_fxpool(fx_pool* pool)
 __pool* __fxpool_aligned_alloc(size_t size, __align alignment)
 {
 #if defined(_MSC_VER) || defined(_WIN32) || defined(_WIN64)
-        return _aligned_malloc(size, alignment);
+        return(__pool*)_aligned_malloc(size, alignment);
 #elif defined(__unix__) || defined(__APPLE__)
         void* ptr = NULL;
         if (posix_memalign(&ptr, alignment, size) != 0)
