@@ -1,0 +1,40 @@
+name: Build and Run on Windows
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Install MinGW (GCC for Windows)
+      run: choco install mingw -y
+
+    - name: Add MinGW to PATH
+      run: echo "C:\ProgramData\chocolatey\lib\mingw\tools\install\mingw64\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8
+
+    - name: Create build directory
+      run: if not exist build mkdir build
+
+    - name: Compile object files
+      run: |
+        gcc -fPIC -I. -c fxerror.c -o build/fxerror.o
+        gcc -fPIC -I. -c fxlog.c   -o build/fxlog.o
+        gcc -fPIC -I. -c fxpool.c  -o build/fxpool.o
+        gcc -fPIC -I. -c fxsys.c   -o build/fxsys.o
+
+    - name: Build shared and static libraries
+      run: |
+        gcc -shared -o build/libcfx.dll build/fxerror.o build/fxlog.o build/fxpool.o build/fxsys.o
+        ar rcs build/libcfx.a build/fxerror.o build/fxlog.o build/fxpool.o build/fxsys.o
+
+    - name: Compile example/main.c
+      run: gcc -I. example/main.c -o example/program.exe -Lbuild -lcfx
+
+    - name: Run the example program
+      run: ./example/program.exe
