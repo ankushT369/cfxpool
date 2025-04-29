@@ -1,3 +1,29 @@
+//BSD 2-Clause License
+//
+//Copyright (c) 2025, Ankush
+//
+//Redistribution and use in source and binary forms, with or without
+//modification, are permitted provided that the following conditions are met:
+//
+//1. Redistributions of source code must retain the above copyright notice, this
+//   list of conditions and the following disclaimer.
+//
+//2. Redistributions in binary form must reproduce the above copyright notice,
+//   this list of conditions and the following disclaimer in the documentation
+//   and/or other materials provided with the distribution.
+//
+//THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+//AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+//IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+//DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+//FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+//DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+//SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+//CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+//OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+//OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
 #ifndef __FX_POOL__
 #define __FX_POOL__
 
@@ -9,10 +35,8 @@ extern "C" {
 #include <stdlib.h>
 
 #include "fxerror.h"
+#include "fxtypes.h"
 
-typedef unsigned char uchar;
-
-extern uint_fast32_t __fxpool__;
 
 /*
  * Enum alignment_t defines different memory alignment options used in 
@@ -38,7 +62,7 @@ typedef enum alignment_t
         A16     = 16,                   // 16-byte alignment
         A32     = 32,                   // 32-byte alignment
         A64     = 64,                   // 64-byte alignment
-} alignment_t;
+} __align;
 
 
 typedef enum data_unit
@@ -49,45 +73,53 @@ typedef enum data_unit
         GB      = 30,
 } data_unit;
 
-static const char* unit_strings[] = {"bytes", "KB", "MB", "GB",};
 
 /*
  * Struct pool_alloc is used to store the state of the 
  * fixed-size memory pool allocator.
  *
  * Members:
- * - _total_blk:        Total number of blocks in the memory pool.
- * - _each_blk_size:    Size (in bytes) of each block in the pool.
- * - _free_blk:         Number of currently available (free) blocks.
- * - _initalized_blk:   Number of blocks that have been initialized so far.
- * - _pool_size:        Total size (in bytes) of the memory pool allocated. This may include
+ * -total_blk:          Total number of blocks in the memory pool.
+ * -each_blk_size:      Size (in bytes) of each block in the pool.
+ * -free_blk:           Number of currently available (free) blocks.
+ * -initalized_blk:     Number of blocks that have been initialized so far.
+ * -pool_size:          Total size (in bytes) of the memory pool allocated. This may include
  *                      the extra space used for alignment or any padding.
- * - _mem_start:        Pointer to the beginning of the allocated memory pool.
- * - _next_blk:         Pointer to the next free block in the pool. It keeps track of the 
+ * -mem_start:          Pointer to the beginning of the allocated memory pool.
+ * -next_blk:           Pointer to the next free block in the pool. It keeps track of the 
  *                      next available memory block for allocation.
- * - _unit:             Data unit type that determines the granularity or unit of allocation
+ * -unit:               Data unit type that determines the granularity or unit of allocation
  *                      (e.g., bytes, kilobytes, etc.). This helps with the allocation logic 
  *                      based on the requested data unit.
- * -_resize:            This value defines whether to resize if all blocks are allocated. 
+ * -resize:             This value defines whether to resize if all blocks are allocated. 
  * 
  * This structure keeps track of memory usage and allocation status
  * for fast and efficient block-based memory management.
- */typedef struct fx_pool
+ */
+typedef struct fx_pool
 {
-        uint_fast32_t   _total_blk;
-        uint_fast32_t   _each_blk_size;
-        uint_fast32_t   _free_blk;
-        uint_fast32_t   _initalized_blk;
-        uint_fast64_t   _pool_size;
-        uchar*          _mem_start;
-        uchar*          _next_blk; 
-        data_unit       _unit;
-        uint_fast8_t    _resize;
+        /* Basic used fields */
+        u32             total_blk;
+        u32             each_blk_size;
+        u32             nr_free_blk;
+        u32             initalized_blk;
+        u64             pool_size;
+
+        /* Pool Data types */
+        __pool*         mem_start_addr;
+        __pool*         next_blk_addr; 
+
+        /* Optional used for later code */
+        u8              resize;
+
+        /* Unit and Alignment of the memory block */
+        __align         alignment;
+        data_unit       unit;
 } fx_pool;
 
 
 /* basic apis */
-fx_error fxpool_create(size_t, data_unit, uint_fast32_t, uchar, fx_pool*);
+fx_error fxpool_create(size_t, data_unit, u32, __align, fx_pool*);
 fx_error fxpool_destroy(fx_pool*);
 void* fxpool_alloc(fx_pool*);
 fx_error fxpool_dealloc(void*, fx_pool*);

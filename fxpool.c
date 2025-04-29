@@ -1,3 +1,29 @@
+//BSD 2-Clause License
+//
+//Copyright (c) 2025, Ankush
+//
+//Redistribution and use in source and binary forms, with or without
+//modification, are permitted provided that the following conditions are met:
+//
+//1. Redistributions of source code must retain the above copyright notice, this
+//   list of conditions and the following disclaimer.
+//
+//2. Redistributions in binary form must reproduce the above copyright notice,
+//   this list of conditions and the following disclaimer in the documentation
+//   and/or other materials provided with the distribution.
+//
+//THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+//AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+//IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+//DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+//FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+//DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+//SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+//CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+//OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+//OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -7,7 +33,9 @@
 #include "util.h"
 #include "fxsys.h"
 
-uint_fast32_t __fxpool__ = 0;
+static u32 __fxpool__ = 0;
+
+static const char* unit_strings[] = { "B", "KB", "MB", "GB" };
 
 void fxpool_log(fx_pool* pool)
 {
@@ -18,13 +46,17 @@ void fxpool_log(fx_pool* pool)
         }
     
         pr_debug("fx_pool Structure:\n");
-        pr_debug("   total_blk:            %" PRIuFAST32 "\n", pool->_total_blk);
-        pr_debug("   each_blk_size:        %" PRIuFAST32 " %s\n", pool->_each_blk_size, unit_strings[pool->_unit / 10]);
-        pr_debug("   free_blk:             %" PRIuFAST32 "\n", pool->_free_blk);
-        pr_debug("   initalized_blk:       %" PRIuFAST32 "\n", pool->_initalized_blk);
-        pr_debug("   pool_size(bytes):     %" PRIuFAST64 "\n", pool->_pool_size);
-        pr_debug("   mem_start:            0x%p\n", (void*)pool->_mem_start);
-        pr_debug("   next_blk:             0x%p\n", (void*)pool->_next_blk);
+
+        pr_debug("   total_blk:            %" PRIuFAST32 "\n", pool->total_blk);
+        pr_debug("   each_blk_size:        %" PRIuFAST32 " %s\n", pool->each_blk_size, unit_strings[pool->unit / 10]);
+        pr_debug("   free_blk:             %" PRIuFAST32 "\n", pool->nr_free_blk);
+        pr_debug("   initalized_blk:       %" PRIuFAST32 "\n", pool->initalized_blk);
+        pr_debug("   pool_size(bytes):     %" PRIuFAST64 "\n", pool->pool_size);
+
+        pr_debug("   mem_start:            0x%p\n", (void*)pool->mem_start_addr);
+        pr_debug("   next_blk:             0x%p\n", (void*)pool->next_blk_addr);
+
+        pr_debug("   alignment:            %" PRIuFAST8 "\n", pool->alignment);
 }
 
 void init_fxpool(fx_pool* pool)
@@ -35,17 +67,20 @@ void init_fxpool(fx_pool* pool)
                 return;
         }
 
-        pool->_total_blk = 0; 
-        pool->_each_blk_size = 0; 
-        pool->_free_blk = 0;
-        pool->_initalized_blk = 0;
-        pool->_pool_size = 0;
-        pool->_mem_start = NULL;
-        pool->_next_blk = NULL;
-        pool->_unit = B;
+        pool->total_blk                 = 0; 
+        pool->each_blk_size             = 0; 
+        pool->nr_free_blk               = 0;
+        pool->initalized_blk            = 0;
+        pool->pool_size                 = 0;
+
+        pool->mem_start_addr            = NULL;
+        pool->next_blk_addr             = NULL;
+
+        pool->alignment                 = SYS_DEF;
+        pool->unit                      = B;
 }
 
-uchar* fxpool_aligned_alloc(size_t size, uchar alignment) 
+__pool* __fxpool_aligned_alloc(size_t size, __align alignment)
 {
 #if defined(_MSC_VER)
         return _aligned_malloc(size, alignment);
@@ -69,7 +104,7 @@ uchar* fxpool_aligned_alloc(size_t size, uchar alignment)
 #endif
 }
 
-void fxpool_aligned_free(uchar* ptr)
+void __fxpool_aligned_free(__pool* ptr)
 {
         if (!ptr)
                 return;
@@ -84,19 +119,25 @@ void fxpool_aligned_free(uchar* ptr)
 #endif
 }
 
+__pool* __fxpool_create(u64 size, __align align)
+{
+        return __fxpool_aligned_alloc(size, align);
+}
+
 /*
   * Create new block.
   * Create a new big chunk of memory block, from which user allocation will be
   * taken from.
   */
-fx_error fxpool_create(size_t each_blk_size, data_unit unit, uint_fast32_t total_blk, uchar align, fx_pool* mp) 
+fx_error fxpool_create(size_t each_blk_size, data_unit unit, u32 total_blk, __align align, fx_pool* mp) 
 {
+        /* Checks error before creating a pool */
         SET_BIT(__fxpool__);
 
         if (unlikely(!mp)) 
                 return FX_RES_PARAM;
 
-        if (unlikely(!is_aligned(align))) 
+        if (unlikely(!__is_aligned(align))) 
                 return FX_RES_ALIGNED;
 
         if (unlikely(each_blk_size == 0 || each_blk_size > (1ULL << 48))) 
@@ -108,21 +149,26 @@ fx_error fxpool_create(size_t each_blk_size, data_unit unit, uint_fast32_t total
         if (unlikely(!CHECK_ARCH_ALIGNMENT(align)))
                 return FX_RES_ARCH_ALIGNMENT;
 
-        size_t aligned_size = align_memory(each_blk_size, align);
 
-        mp->_total_blk = total_blk;
-        mp->_each_blk_size = aligned_size;
-        
-        /* Pool Allocation */
-        uchar* mem_start = fxpool_aligned_alloc(TO_BYTES(aligned_size, unit) * total_blk, align);
-        if (unlikely(!mem_start))
+        /* Align the block size if not aligned */
+        u64 aligned_size = __get_aligned_size(each_blk_size, unit, align);
+
+        mp->each_blk_size       = aligned_size;
+        mp->total_blk           = total_blk;
+        mp->nr_free_blk         = total_blk;
+        mp->pool_size           = aligned_size * total_blk;
+
+        mp->alignment           = align;
+        mp->unit                = unit;
+
+        /* Create the memory pool and allocate */
+        __pool* mem_addr = __fxpool_create(mp->pool_size, align);
+
+        if (unlikely(!mem_addr))
                 return FX_RES_MEMORY;
 
-        mp->_free_blk           = total_blk;
-        mp->_next_blk           = mem_start;
-        mp->_pool_size          = TO_BYTES(aligned_size, unit) * total_blk;
-        mp->_mem_start          = mem_start;
-        mp->_unit               = unit;
+        mp->mem_start_addr      = mem_addr;
+        mp->next_blk_addr       = mem_addr;
 
         return FX_RES_OK;
 }
@@ -138,10 +184,10 @@ fx_error fxpool_destroy(fx_pool* mp)
         if (unlikely(!mp)) 
                 return FX_RES_PARAM;
 
-        if (mp->_mem_start) 
+        if (mp->mem_start_addr) 
         {
-                fxpool_aligned_free(mp->_mem_start);
-                mp->_mem_start = NULL;
+                __fxpool_aligned_free(mp->mem_start_addr);
+                mp->mem_start_addr = NULL;
         }
 
         init_fxpool(mp);
@@ -163,25 +209,25 @@ void* fxpool_alloc(fx_pool* mp)
         if (unlikely(!mp)) 
                 return NULL;
 
-        if (mp->_initalized_blk < mp->_total_blk) 
+        if (mp->initalized_blk < mp->total_blk) 
         {
-                uint_fast32_t* p = (uint_fast32_t*)addr_from_index(mp->_initalized_blk, mp);
-                *p = mp->_initalized_blk + 1;
-                mp->_initalized_blk++;
+                u32* p = (u32*)__addr_from_index(mp->initalized_blk, mp);
+                *p = mp->initalized_blk + 1;
+                mp->initalized_blk++;
         }
 
-        void* ret = NULL;
-        if (mp->_free_blk > 0)
+        void* ret_addr = NULL;
+        if (mp->nr_free_blk > 0)
         {
-                ret = (void*)mp->_next_blk;
-                --mp->_free_blk;
-                if (mp->_free_blk != 0) 
-                        mp->_next_blk = addr_from_index(*((uint_fast32_t*)mp->_next_blk), mp);
+                ret_addr = (void*)mp->next_blk_addr;
+                --mp->nr_free_blk;
+                if (mp->nr_free_blk != 0) 
+                        mp->next_blk_addr = __addr_from_index(*((u32*)mp->next_blk_addr), mp);
                 else
-                        mp->_next_blk = NULL;
+                        mp->next_blk_addr = NULL;
         }
 
-        return ret;
+        return ret_addr;
 }
 
  /*
@@ -198,16 +244,16 @@ fx_error fxpool_dealloc(void* ptr, fx_pool* mp)
         if (unlikely(!ptr)) 
                 return FX_RES_PARAM;
 
-        if (mp->_next_blk) 
+        if (mp->next_blk_addr) 
         {
-                (*(uint_fast32_t*)ptr) = index_from_addr(mp->_next_blk, mp);
-                mp->_next_blk = (uchar*)ptr;
+                (*(u32*)ptr) = __index_from_addr(mp->next_blk_addr, mp);
+                mp->next_blk_addr = (__pool*)ptr;
         } else 
         {
-                (*(uint_fast32_t*)ptr) = mp->_total_blk;
-                mp->_next_blk = (uchar*)ptr;
+                (*(u32*)ptr) = mp->total_blk;
+                mp->next_blk_addr = (__pool*)ptr;
         }
-        ++mp->_free_blk;
+        ++mp->nr_free_blk;
 
         return FX_RES_OK;
 }
@@ -220,12 +266,12 @@ fx_error fxpool_reset(fx_pool* mp)
         if (unlikely(!mp)) 
                 return FX_RES_PARAM;
 
-        mp->_total_blk          = 0; 
-        mp->_each_blk_size      = 0; 
-        mp->_free_blk           = 0;
-        mp->_initalized_blk     = 0;
-        mp->_next_blk           = mp->_mem_start;
+        mp->total_blk           = 0; 
+        mp->each_blk_size       = 0; 
+        mp->nr_free_blk         = 0;
+        mp->initalized_blk      = 0;
+
+        mp->next_blk_addr       = mp->mem_start_addr;
 
         return FX_RES_OK;
 }
-

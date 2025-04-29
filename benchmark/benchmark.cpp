@@ -7,7 +7,7 @@ static void BM_fxpool_alloc(benchmark::State& state)
         size_t ebs = state.range(0);
         data_unit unit = KB;
         uint_fast32_t tblk = state.range(1);
-        uchar align = 8;
+        u8 align = 64;
 
         fx_error err = fxpool_create(ebs, unit, tblk, align, &pool);
         for (auto _ : state) {

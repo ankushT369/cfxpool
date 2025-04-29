@@ -1,5 +1,5 @@
-#ifndef __UTIL_H__
-#define __UTIL_H__
+#ifndef __UTIL__
+#define __UTIL__
 
 #include <inttypes.h>
 
@@ -28,43 +28,40 @@ typedef unsigned char uchar;
 // Macro to clear the 0th bit (set it to 0)
 #define CLEAR_BIT(bf) ((bf) &= ~1U)
 
-#define TO_BYTES(x, unit) ((x) << (unit))
-
 #define CHECK_ARCH_ALIGNMENT(alignment)                  \
     ((alignment) != 0 &&                                \
      ((alignment) & ((alignment) - 1)) == 0 &&          \
      ((alignment) & (sizeof(void *) - 1)) == 0)
 
 
-static inline int is_power_of_2(uint_fast8_t n)
+static inline u32 __is_power_of_2(u8 n)
 {
     return (n > 0) && ((n & (n - 1)) == 0);
 }
 
-static inline int is_aligned(uint_fast8_t n) 
+static inline u32 __is_aligned(u8 n) 
 {
-    return is_power_of_2(n) && (n >= 4 && n <= 64);
+    return __is_power_of_2(n) && (n >= 4 && n <= 64);
 }
 
-static inline uchar* addr_from_index(uint_fast32_t index, fx_pool* fp)
+static inline u8* __addr_from_index(u8 index, fx_pool* fp)
 {
-        return fp->_mem_start + (index * fp->_each_blk_size);
+        return fp->mem_start_addr + (index * fp->each_blk_size);
 }
 
-static inline uint32_t index_from_addr(const uchar* addr, fx_pool* fp)
+static inline u32 __index_from_addr(const u8* addr, fx_pool* fp)
 {
-        return (((uint_fast32_t)(addr - fp->_mem_start)) / fp->_each_blk_size);
+        return (((uint_fast32_t)(addr - fp->mem_start_addr)) / fp->each_blk_size);
 }
 
-static inline uint_fast32_t align_memory(uint_fast32_t size, uint_fast8_t alignment)
+static inline u64 __get_aligned_size(size_t size, data_unit unit, size_t alignment)
 {
-        return (((size) + (alignment) - 1) & ~((alignment) - 1));
+        return ((size << unit) + alignment - 1) & ~(alignment - 1);
 }
-
-static inline size_t round_up_to_page(size_t size, size_t page_size)
+static inline size_t __round_up_to_page(size_t size, size_t page_size)
 {
     return (size + page_size - 1) & ~(page_size - 1);
 }
 
 
-#endif // __UTIL_H__
+#endif // __UTIL__

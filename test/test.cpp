@@ -21,7 +21,6 @@ TEST(fxpool_core, alloc)
 {
         void* ptr = NULL;
         fx_pool pool;
-        __fxpool__ = 0;
         EXPECT_EQ(fxpool_alloc(&pool), ptr);
 
         fxpool_create(16, B, 3, A16, &pool);
