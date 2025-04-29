@@ -82,17 +82,17 @@ void init_fxpool(fx_pool* pool)
 
 __pool* __fxpool_aligned_alloc(size_t size, __align alignment)
 {
-#if defined(_MSC_VER)
+#if defined(_MSC_VER) || defined(_WIN32) || defined(_WIN64)
         return _aligned_malloc(size, alignment);
 #elif defined(__unix__) || defined(__APPLE__)
         void* ptr = NULL;
         if (posix_memalign(&ptr, alignment, size) != 0)
                 return NULL;
-        return (uchar*)ptr;
+        return (__pool*)ptr;
 #elif defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
-        return aligned_alloc(alignment, size);
+        return (__pool*)aligned_alloc(alignment, size);
 #else
-        /* Manual fallback */
+        /* Manual Fallback */
         void* p1;
         void** p2;
         size_t offset = alignment - 1 + sizeof(void*);
