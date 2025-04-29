@@ -45,7 +45,7 @@ void init_fxpool(fx_pool* pool)
         pool->_unit = B;
 }
 
-inline uchar* fxpool_aligned_alloc(size_t size, uchar alignment) 
+uchar* fxpool_aligned_alloc(size_t size, uchar alignment) 
 {
 #if defined(_MSC_VER)
         return _aligned_malloc(size, alignment);
@@ -69,7 +69,7 @@ inline uchar* fxpool_aligned_alloc(size_t size, uchar alignment)
 #endif
 }
 
-inline void fxpool_aligned_free(uchar* ptr)
+void fxpool_aligned_free(uchar* ptr)
 {
         if (!ptr)
                 return;
@@ -99,11 +99,14 @@ fx_error fxpool_create(size_t each_blk_size, data_unit unit, uint_fast32_t total
         if (unlikely(!is_aligned(align))) 
                 return FX_RES_ALIGNED;
 
-        if (each_blk_size == 0 || each_blk_size > (1ULL << 48)) 
+        if (unlikely(each_blk_size == 0 || each_blk_size > (1ULL << 48))) 
                 return FX_RES_BLK_SIZE;
 
         if (unlikely(total_blk == 0)) 
                 return FX_RES_TOTAL_BLK;
+
+        if (unlikely(!CHECK_ARCH_ALIGNMENT(align)))
+                return FX_RES_ARCH_ALIGNMENT;
 
         size_t aligned_size = align_memory(each_blk_size, align);
 
@@ -111,13 +114,13 @@ fx_error fxpool_create(size_t each_blk_size, data_unit unit, uint_fast32_t total
         mp->_each_blk_size = aligned_size;
         
         /* Pool Allocation */
-        uchar* mem_start = fxpool_aligned_alloc(TO_BYTES(each_blk_size, unit) * total_blk, align);
-        if (!mem_start) 
+        uchar* mem_start = fxpool_aligned_alloc(TO_BYTES(aligned_size, unit) * total_blk, align);
+        if (unlikely(!mem_start))
                 return FX_RES_MEMORY;
 
         mp->_free_blk           = total_blk;
         mp->_next_blk           = mem_start;
-        mp->_pool_size          = aligned_size * total_blk;
+        mp->_pool_size          = TO_BYTES(aligned_size, unit) * total_blk;
         mp->_mem_start          = mem_start;
         mp->_unit               = unit;
 
@@ -140,6 +143,7 @@ fx_error fxpool_destroy(fx_pool* mp)
                 fxpool_aligned_free(mp->_mem_start);
                 mp->_mem_start = NULL;
         }
+
         init_fxpool(mp);
         CLEAR_BIT(__fxpool__);
         return FX_RES_OK;

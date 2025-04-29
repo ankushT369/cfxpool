@@ -30,6 +30,11 @@ typedef unsigned char uchar;
 
 #define TO_BYTES(x, unit) ((x) << (unit))
 
+#define CHECK_ARCH_ALIGNMENT(alignment)                  \
+    ((alignment) != 0 &&                                \
+     ((alignment) & ((alignment) - 1)) == 0 &&          \
+     ((alignment) & (sizeof(void *) - 1)) == 0)
+
 
 static inline int is_power_of_2(uint_fast8_t n)
 {

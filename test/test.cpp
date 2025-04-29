@@ -9,10 +9,10 @@ extern "C" {
 TEST(fxpool_core, create) 
 {
         fx_pool pool;
-        EXPECT_EQ(fxpool_create(100,  KB, 10,  ALIGN_16, &pool), FX_RES_OK);
+        EXPECT_EQ(fxpool_create(10, KB, 200, ALIGN_8, &pool), FX_RES_OK);
         EXPECT_EQ(fxpool_create(100,  KB, 10,  27, &pool), FX_RES_ALIGNED);
         EXPECT_EQ(fxpool_create(100,  KB, 1000000000000000000,  ALIGN_16, &pool), FX_RES_MEMORY);
-        EXPECT_EQ(fxpool_create(-300, KB, 10,  ALIGN_4,  &pool), FX_RES_PARAM);
+        EXPECT_EQ(fxpool_create(-300, KB, 10,  ALIGN_4,  &pool), FX_RES_BLK_SIZE);
         EXPECT_EQ(fxpool_create(10,   MB, 20,  ALIGN_8,  NULL),  FX_RES_PARAM);
 }
 

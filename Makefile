@@ -1,26 +1,40 @@
-# Variables
+# List of source files
+SRCS = fxerror.c fxlog.c fxpool.c fxsys.c
+
+# Object files (placed in build/)
+OBJS = $(SRCS:.c=.o)
+BUILD_OBJS = $(addprefix build/, $(OBJS))
+
+# Include and output directories
+INCLUDE_DIR = .
+BUILD_DIR = build
+
+# Compiler and flags
 CC = gcc
-CFLAGS = -Wall -Werror -I.      # Compiler flags: show warnings, use current directory for headers
-SRC = main.c fxerror.c fxlog.c fxpool.c fxsys.c  # All your source files
-OBJ = $(SRC:%.c=build/%.o)      # Object files will be in build/ folder
-TARGET = build/exec             # Final executable in build/ folder
+CFLAGS = -fPIC -I$(INCLUDE_DIR)
 
-# Default target
-all: $(TARGET)
+# Targets
+all: $(BUILD_DIR)/libcfx.so $(BUILD_DIR)/libcfx.a
 
-# How to build the final executable
-$(TARGET): $(OBJ)
-	$(CC) $(OBJ) -o $(TARGET)
+# Create build directory if not exists
+$(BUILD_DIR):
+	mkdir -p $(BUILD_DIR)
 
-# How to compile .c to .o files into build/
-build/%.o: %.c
-	@mkdir -p build              # Make sure build folder exists
+# Compile .c to .o into build/
+$(BUILD_DIR)/%.o: %.c | $(BUILD_DIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
-# Clean build files
-clean:
-	rm -rf build
+# Create shared library
+$(BUILD_DIR)/libcfx.so: $(BUILD_OBJS)
+	$(CC) -shared -o $@ $^
 
-# Phony targets
+# Create static library
+$(BUILD_DIR)/libcfx.a: $(BUILD_OBJS)
+	ar rcs $@ $^
+
+# Clean up
+clean:
+	rm -rf $(BUILD_DIR)
+
 .PHONY: all clean
 
