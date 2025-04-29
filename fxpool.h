@@ -20,37 +20,36 @@ extern uint_fast32_t __fxpool__;
  * misalignment errors.
  * 
  * Members:
- * - DEFAULT:    Default alignment (typically 4 bytes).
- * - ALIGN_4:    4-byte alignment (2^2).
- * - ALIGN_8:    8-byte alignment (2^3).
- * - ALIGN_16:   16-byte alignment (2^4).
- * - ALIGN_32:   32-byte alignment (2^5).
- * - ALIGN_64:   64-byte alignment (2^6).
+ * - SYS_DEF:   System Default alignment
+ * - A4:        4-byte alignment
+ * - A8:        8-byte alignment
+ * - A16:       16-byte alignment
+ * - A32:       32-byte alignment
+ * - A64:       64-byte alignment
  * 
  * These values ensure that allocated memory is aligned to appropriate 
  * boundaries, improving memory access performance.
  */
 typedef enum alignment_t
 {
-        DEFAULT  = 4,   // Default alignment, typically 4 bytes
-        ALIGN_4  = (1 << 2), // 4-byte alignment (2^2)
-        ALIGN_8  = (1 << 3), // 8-byte alignment (2^3)
-        ALIGN_16 = (1 << 4), // 16-byte alignment (2^4)
-        ALIGN_32 = (1 << 5), // 32-byte alignment (2^5)
-        ALIGN_64 = (1 << 6), // 64-byte alignment (2^6)
+        SYS_DEF = sizeof(void*),        // System Default alignment
+        A4      = 4,                    // 4-byte alignment
+        A8      = 8,                    // 8-byte alignment
+        A16     = 16,                   // 16-byte alignment
+        A32     = 32,                   // 32-byte alignment
+        A64     = 64,                   // 64-byte alignment
 } alignment_t;
 
 
 typedef enum data_unit
 {
-        B = 0,
-        KB = 10,
-        MB = 20,
-        GB = 30,
-        TB = 40,
+        B       = 0,
+        KB      = 10,
+        MB      = 20,
+        GB      = 30,
 } data_unit;
 
-static const char* unit_strings[] = {"bytes", "KB", "MB", "GB", "TB"};
+static const char* unit_strings[] = {"bytes", "KB", "MB", "GB",};
 
 /*
  * Struct pool_alloc is used to store the state of the 
