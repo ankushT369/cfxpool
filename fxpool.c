@@ -33,7 +33,7 @@
 #include "util.h"
 
 
-static __tsafe __fxpool__ = 0;
+static u8 __fxpool__ = 0;
 
 static const char* unit_strings[] = { "B", "KB", "MB", "GB" };
 
