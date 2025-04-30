@@ -54,7 +54,7 @@ static inline u32 __index_from_addr(const u8* addr, fx_pool* fp)
         return (((uint_fast32_t)(addr - fp->mem_start_addr)) / fp->each_blk_size);
 }
 
-static inline u64 __get_aligned_size(size_t size, data_unit unit, size_t alignment)
+static inline u64 __get_aligned_size(size_t size, data_unit_t unit, size_t alignment)
 {
         return ((size << unit) + alignment - 1) & ~(alignment - 1);
 }

@@ -80,7 +80,7 @@ void init_fxpool(fx_pool* pool)
         pool->unit                      = B;
 }
 
-__pool* __fxpool_aligned_alloc(size_t size, __align alignment)
+__pool* __fxpool_aligned_alloc(size_t size, align_t alignment)
 {
 #if defined(_MSC_VER) || defined(_WIN32) || defined(_WIN64)
         return(__pool*)_aligned_malloc(size, alignment);
@@ -119,7 +119,7 @@ void __fxpool_aligned_free(__pool* ptr)
 #endif
 }
 
-__pool* __fxpool_create(u64 size, __align align)
+__pool* __fxpool_create(u64 size, align_t align)
 {
         return __fxpool_aligned_alloc(size, align);
 }
@@ -129,7 +129,7 @@ __pool* __fxpool_create(u64 size, __align align)
   * Create a new big chunk of memory block, from which user allocation will be
   * taken from.
   */
-fx_error fxpool_create(size_t each_blk_size, data_unit unit, u32 total_blk, __align align, fx_pool* mp) 
+fx_error fxpool_create(size_t each_blk_size, data_unit_t unit, u32 total_blk, align_t align, fx_pool* mp, smode_t mode) 
 {
         /* Checks error before creating a pool */
         SET_BIT(__fxpool__);

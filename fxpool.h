@@ -50,11 +50,14 @@ extern "C" {
  * - A16:       16-byte alignment
  * - A32:       32-byte alignment
  * - A64:       64-byte alignment
+ * - A128:      128-byte alignment
+ * - A256:      256-byte alignment
+ * - A512:      512-byte alignment
  * 
  * These values ensure that allocated memory is aligned to appropriate 
  * boundaries, improving memory access performance.
  */
-typedef enum alignment_t
+typedef enum
 {
         SYS_DEF = sizeof(void*),        // System Default alignment
         A4      = 4,                    // 4-byte alignment
@@ -62,17 +65,27 @@ typedef enum alignment_t
         A16     = 16,                   // 16-byte alignment
         A32     = 32,                   // 32-byte alignment
         A64     = 64,                   // 64-byte alignment
-} __align;
+        A128    = 128,                  // 128-byte alignment
+        A256    = 256,                  // 256-byte alignment
+        A512    = 512,                  // 512-byte alignment
+} align_t;
 
 
-typedef enum data_unit
+typedef enum
 {
         B       = 0,
         KB      = 10,
         MB      = 20,
         GB      = 30,
-} data_unit;
+} data_unit_t;
 
+
+typedef enum
+{
+        FXPOOL_SIZE_DEFAULT     = (1 << 0),
+        FXPOOL_SIZE_CUSTOM      = (1 << 2),
+        FXPOOL_SIZE_AUTO_GROW   = (1 << 4),
+} smode_t;
 
 /*
  * Struct pool_alloc is used to store the state of the 
@@ -96,9 +109,9 @@ typedef enum data_unit
  * This structure keeps track of memory usage and allocation status
  * for fast and efficient block-based memory management.
  */
-typedef struct fx_pool
+typedef struct
 {
-        /* Basic used fields */
+        /* Basic fields */
         u32             total_blk;
         u32             each_blk_size;
         u32             nr_free_blk;
@@ -113,13 +126,14 @@ typedef struct fx_pool
         u8              resize;
 
         /* Unit and Alignment of the memory block */
-        __align         alignment;
-        data_unit       unit;
+        align_t         alignment;
+        data_unit_t     unit;
+        smode_t         mode;
 } fx_pool;
 
 
 /* basic apis */
-fx_error fxpool_create(size_t, data_unit, u32, __align, fx_pool*);
+fx_error fxpool_create(size_t, data_unit_t, u32, align_t, fx_pool*, smode_t);
 fx_error fxpool_destroy(fx_pool*);
 void* fxpool_alloc(fx_pool*);
 fx_error fxpool_dealloc(void*, fx_pool*);
