@@ -31,9 +31,9 @@
 #include "fxpool.h"
 #include "fxlog.h"
 #include "util.h"
-#include "fxsys.h"
 
-static u32 __fxpool__ = 0;
+
+static __tsafe __fxpool__ = 0;
 
 static const char* unit_strings[] = { "B", "KB", "MB", "GB" };
 

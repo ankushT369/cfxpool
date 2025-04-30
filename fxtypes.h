@@ -2,6 +2,9 @@
 #define __FXTYPES__
 
 #include <stdint.h>
+#include <stdatomic.h>
+
+typedef atomic_int              __tsafe;
 
 typedef unsigned char           __pool;
 
