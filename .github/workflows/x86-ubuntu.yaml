@@ -1,0 +1,44 @@
+name: Build and Run on 32-bit Linux (x86)
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Install 32-bit GCC and dependencies
+      run: |
+        sudo dpkg --add-architecture i386
+        sudo apt update
+        sudo apt install -y gcc-multilib g++-multilib
+
+    - name: Create build directory
+      run: mkdir -p build
+
+    - name: Compile object files for 32-bit
+      run: |
+        gcc -m32 -fPIC -I. -c fxerror.c -o build/fxerror.o
+        gcc -m32 -fPIC -I. -c fxlog.c   -o build/fxlog.o
+        gcc -m32 -fPIC -I. -c fxpool.c  -o build/fxpool.o
+        gcc -m32 -fPIC -I. -c fxsys.c   -o build/fxsys.o
+
+    - name: Build shared and static libraries (32-bit)
+      run: |
+        gcc -m32 -shared -o build/libcfx.so build/fxerror.o build/fxlog.o build/fxpool.o build/fxsys.o
+        ar rcs build/libcfx.a build/fxerror.o build/fxlog.o build/fxpool.o build/fxsys.o
+
+    - name: Compile main.c with 32-bit library
+      run: |
+        gcc -m32 -I. example/main.c -o example/program -Lbuild -lcfx
+
+    - name: Run the program (with LD_LIBRARY_PATH)
+      run: |
+        export LD_LIBRARY_PATH=build
+        ./example/program
+
