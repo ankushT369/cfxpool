@@ -42,5 +42,5 @@ jobs:
     - name: Run the example program
       run: |
         cd example
-        ./program.exe
+        .\program.exe
 
