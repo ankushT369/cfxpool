@@ -108,7 +108,7 @@ void __fxpool_aligned_free(__pool* ptr)
 {
         if (!ptr)
                 return;
-#if defined(_MSC_VER)
+#if defined(_MSC_VER) || defined(_WIN32) || defined(_WIN64)
         _aligned_free(ptr);
 #elif defined(__unix__) || defined(__APPLE__)
         free(ptr);  // Standard free

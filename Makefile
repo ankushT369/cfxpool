@@ -10,7 +10,7 @@ INCLUDE_DIR = .
 BUILD_DIR = build
 
 # Compiler and flags
-CC = gcc
+CC ?= gcc
 CFLAGS = -fPIC -I$(INCLUDE_DIR)
 
 # Targets
