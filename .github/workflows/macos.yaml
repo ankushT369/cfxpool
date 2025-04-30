@@ -1,0 +1,37 @@
+name: Build and Run on macOS
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Create build directory
+      run: mkdir -p build
+
+    - name: Compile object files with clang
+      run: |
+        clang -fPIC -I. -c fxerror.c -o build/fxerror.o
+        clang -fPIC -I. -c fxlog.c   -o build/fxlog.o
+        clang -fPIC -I. -c fxpool.c  -o build/fxpool.o
+        clang -fPIC -I. -c fxsys.c   -o build/fxsys.o
+
+    - name: Create shared library (libcfx.dylib)
+      run: |
+        clang -dynamiclib -o build/libcfx.dylib build/fxerror.o build/fxlog.o build/fxpool.o build/fxsys.o
+
+    - name: Compile main.c using shared library
+      run: |
+        clang -I. example/main.c -o example/program -Lbuild -lcfx
+
+    - name: Run the program (with DYLD_LIBRARY_PATH)
+      run: |
+        export DYLD_LIBRARY_PATH=build
+        ./example/program
+
