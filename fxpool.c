@@ -149,6 +149,9 @@ fx_error fxpool_create(size_t each_blk_size, data_unit_t unit, u32 total_blk, al
         if (unlikely(!CHECK_ARCH_ALIGNMENT(align)))
                 return FX_RES_ARCH_ALIGNMENT;
 
+        if ((mode & (FXPOOL_SIZE_AUTO_GROW | FXPOOL_SIZE_CUSTOM)) || 
+                (mode & (FXPOOL_SIZE_AUTO_GROW | FXPOOL_SIZE_DEFAULT)))
+                mp->resize = 1;
 
         /* Align the block size if not aligned */
         u64 aligned_size = __get_aligned_size(each_blk_size, unit, align);

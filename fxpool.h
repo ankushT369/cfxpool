@@ -122,8 +122,8 @@ typedef struct
         __pool*         mem_start_addr;
         __pool*         next_blk_addr; 
 
-        /* Optional used for later code */
-        u8              resize;
+        /* Auto resize pool */
+        bool            resize;
 
         /* Unit and Alignment of the memory block */
         align_t         alignment;
