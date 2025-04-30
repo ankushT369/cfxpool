@@ -36,7 +36,11 @@ jobs:
     - name: Compile example/main.c
       run: gcc -I. example/main.c -o example/program.exe -Lbuild -lcfx
 
+    - name: Copy DLL to example directory
+      run: Copy-Item -Path build\libcfx.dll -Destination example\
+
     - name: Run the example program
       run: |
         cd example
         ./program.exe
+
