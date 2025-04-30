@@ -5,7 +5,7 @@ SRC = main.c
 OUT = program
 
 # Compiler and flags
-CC = gcc
+CC ?= gcc
 CFLAGS = -I$(INCLUDE_DIR)
 LDFLAGS = -L$(BUILD_DIR) -lcfx
 
