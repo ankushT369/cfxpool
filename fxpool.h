@@ -37,7 +37,7 @@ extern "C" {
 
 #include "fxerror.h"
 #include "fxtypes.h"
-
+#include "list.h"
 
 /*
  * Enum alignment_t defines different memory alignment options used in 
@@ -106,12 +106,20 @@ typedef enum
  *                      (e.g., bytes, kilobytes, etc.). This helps with the allocation logic 
  *                      based on the requested data unit.
  * -resize:             This value defines whether to resize if all blocks are allocated. 
+ * -mode:               Size mode type of the memory pool it define whether to grow automatically. 
  * 
  * This structure keeps track of memory usage and allocation status
  * for fast and efficient block-based memory management.
  */
+
+/* Pool index shadowing from user */
+typedef struct pool_index __pool_idx;
+
 typedef struct
 {
+        /* pool identifier */
+        __pool_idx*     pool_idx;
+
         /* Basic fields */
         u32             total_blk;
         u32             each_blk_size;
@@ -126,14 +134,18 @@ typedef struct
         /* Auto resize pool */
         bool            resize;
 
-        /* Unit and Alignment of the memory block */
+        /* Unit, Alignment and mode of the memory block */
         align_t         alignment;
         data_unit_t     unit;
         smode_t         mode;
+
+        /* list to connect different pools */
+        __pool_list     list;
 } fx_pool;
 
 
 /* basic apis */
+void init_fxpool(fx_pool*);
 fx_error fxpool_create(size_t, data_unit_t, u32, align_t, fx_pool*, smode_t);
 fx_error fxpool_destroy(fx_pool*);
 void* fxpool_alloc(fx_pool*);

@@ -26,16 +26,22 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdbool.h>
 
 #include "fxpool.h"
 #include "fxlog.h"
 #include "util.h"
 
 
-static u8 __fxpool__ = 0;
+static u64 global_pool_index_counter = 0;
 
 static const char* unit_strings[] = { "B", "KB", "MB", "GB" };
+
+/* Pool unique identifier index */
+struct pool_index 
+{
+        u64             idx;
+        u64             set;
+};
 
 void fxpool_log(fx_pool* pool)
 {
@@ -67,17 +73,30 @@ void init_fxpool(fx_pool* pool)
                 return;
         }
 
-        pool->total_blk                 = 0; 
-        pool->each_blk_size             = 0; 
-        pool->nr_free_blk               = 0;
-        pool->initalized_blk            = 0;
-        pool->pool_size                 = 0;
+        pool->pool_idx          = NULL;
 
-        pool->mem_start_addr            = NULL;
-        pool->next_blk_addr             = NULL;
+        pool->total_blk         = 0; 
+        pool->each_blk_size     = 0; 
+        pool->nr_free_blk       = 0;
+        pool->initalized_blk    = 0;
+        pool->pool_size         = 0;
 
-        pool->alignment                 = SYS_DEF;
-        pool->unit                      = B;
+        pool->mem_start_addr    = NULL;
+        pool->next_blk_addr     = NULL;
+
+        pool->resize            = false;
+
+        pool->alignment         = SYS_DEF;
+        pool->unit              = B;
+}
+
+void __register_pool(fx_pool* mp)
+{
+        mp->pool_idx = (__pool_idx*)malloc(sizeof(__pool_idx));
+
+        mp->pool_idx->idx = global_pool_index_counter++;
+        /* Checks error before creating a pool */
+        SET_BIT(mp->pool_idx->set);
 }
 
 __pool* __fxpool_aligned_alloc(size_t size, align_t alignment)
@@ -131,8 +150,11 @@ __pool* __fxpool_create(u64 size, align_t align)
   */
 fx_error fxpool_create(size_t each_blk_size, data_unit_t unit, u32 total_blk, align_t align, fx_pool* mp, smode_t mode) 
 {
-        /* Checks error before creating a pool */
-        SET_BIT(__fxpool__);
+        if (mp->pool_size != 0)
+                return FX_RES_FAIL;
+        
+        /* Register before creating a pool */
+        __register_pool(mp);
 
         if (unlikely(!mp)) 
                 return FX_RES_PARAM;
@@ -149,8 +171,8 @@ fx_error fxpool_create(size_t each_blk_size, data_unit_t unit, u32 total_blk, al
         if (unlikely(!CHECK_ARCH_ALIGNMENT(align)))
                 return FX_RES_ARCH_ALIGNMENT;
 
-        if ((mode & (FXPOOL_SIZE_AUTO_GROW | FXPOOL_SIZE_CUSTOM)) || 
-                (mode & (FXPOOL_SIZE_AUTO_GROW | FXPOOL_SIZE_DEFAULT)))
+        if ((mode & (FXPOOL_SIZE_AUTO_GROW | FXPOOL_SIZE_CUSTOM)) == mode || 
+                (mode & (FXPOOL_SIZE_AUTO_GROW | FXPOOL_SIZE_DEFAULT)) == mode)
                 mp->resize = 1;
 
         /* Align the block size if not aligned */
@@ -160,6 +182,7 @@ fx_error fxpool_create(size_t each_blk_size, data_unit_t unit, u32 total_blk, al
         mp->total_blk           = total_blk;
         mp->nr_free_blk         = total_blk;
         mp->pool_size           = aligned_size * total_blk;
+        mp->initalized_blk      = 0;
 
         mp->alignment           = align;
         mp->unit                = unit;
@@ -181,7 +204,7 @@ fx_error fxpool_create(size_t each_blk_size, data_unit_t unit, u32 total_blk, al
   */
 fx_error fxpool_destroy(fx_pool* mp)
 {
-        if (unlikely(!CHECK_BIT(__fxpool__))) 
+        if (unlikely(!CHECK_BIT(mp->pool_idx->set))) 
                 return FX_RES_FAIL;
 
         if (unlikely(!mp)) 
@@ -193,8 +216,9 @@ fx_error fxpool_destroy(fx_pool* mp)
                 mp->mem_start_addr = NULL;
         }
 
+        CLEAR_BIT(mp->pool_idx->set);
         init_fxpool(mp);
-        CLEAR_BIT(__fxpool__);
+
         return FX_RES_OK;
 }
 
@@ -206,7 +230,7 @@ fx_error fxpool_destroy(fx_pool* mp)
   */
 void* fxpool_alloc(fx_pool* mp)
 {
-        if (unlikely(!CHECK_BIT(__fxpool__))) 
+        if (unlikely(!CHECK_BIT(mp->pool_idx->set))) 
                 return NULL;
 
         if (unlikely(!mp)) 
@@ -238,7 +262,7 @@ void* fxpool_alloc(fx_pool* mp)
   */
 fx_error fxpool_dealloc(void* ptr, fx_pool* mp)
 {
-        if (unlikely(!CHECK_BIT(__fxpool__))) 
+        if (unlikely(!CHECK_BIT(mp->pool_idx->set))) 
                 return FX_RES_FAIL;
 
         if (unlikely(!mp)) 
