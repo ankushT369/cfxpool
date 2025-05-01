@@ -33,6 +33,7 @@ extern "C" {
 
 #include <inttypes.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
 #include "fxerror.h"
 #include "fxtypes.h"
