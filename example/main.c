@@ -7,7 +7,7 @@ void bug() {
 }
 
 int main() {
-        fx_pool pool;
+        fx_pool pool = {0};
         fx_error err = fxpool_create(4, B, 883, SYS_DEF, &pool, (FXPOOL_SIZE_AUTO_GROW | FXPOOL_SIZE_CUSTOM));
         fxpool_log(&pool);
 
