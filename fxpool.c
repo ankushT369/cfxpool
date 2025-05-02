@@ -309,9 +309,9 @@ fx_error fxpool_access(u64 index)
 u64 fxpool_capacity(fx_pool* mp)
 {
         if (!mp)
-                return FX_RES_PARAM;
+                return 0;
         else if (!CHECK_BIT(mp->set_pool->set))
-                return FX_RES_FAIL;
+                return 0;
         else
                 return mp->pool_size;
 }
