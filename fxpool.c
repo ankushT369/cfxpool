@@ -37,7 +37,7 @@ static u64 global_pool_index_counter = 0;
 static const char* unit_strings[] = { "B", "KB", "MB", "GB" };
 
 /* Pool unique identifier index */
-struct pool_index 
+struct pool_set
 {
         u64             idx;
         u64             set;
@@ -73,7 +73,7 @@ void init_fxpool(fx_pool* pool)
                 return;
         }
 
-        pool->pool_idx          = NULL;
+        pool->set_pool          = NULL;
 
         pool->total_blk         = 0; 
         pool->each_blk_size     = 0; 
@@ -92,11 +92,9 @@ void init_fxpool(fx_pool* pool)
 
 void __register_pool(fx_pool* mp)
 {
-        mp->pool_idx = (__pool_idx*)malloc(sizeof(__pool_idx));
-
-        mp->pool_idx->idx = global_pool_index_counter++;
+        mp->set_pool = (__pool_set*)malloc(sizeof(__pool_set));
         /* Checks error before creating a pool */
-        SET_BIT(mp->pool_idx->set);
+        SET_BIT(mp->set_pool->set);
 }
 
 __pool* __fxpool_aligned_alloc(size_t size, align_t alignment)
@@ -204,7 +202,7 @@ fx_error fxpool_create(size_t each_blk_size, data_unit_t unit, u32 total_blk, al
   */
 fx_error fxpool_destroy(fx_pool* mp)
 {
-        if (unlikely(!CHECK_BIT(mp->pool_idx->set))) 
+        if (unlikely(!CHECK_BIT(mp->set_pool->set))) 
                 return FX_RES_FAIL;
 
         if (unlikely(!mp)) 
@@ -216,7 +214,7 @@ fx_error fxpool_destroy(fx_pool* mp)
                 mp->mem_start_addr = NULL;
         }
 
-        CLEAR_BIT(mp->pool_idx->set);
+        CLEAR_BIT(mp->set_pool->set);
         init_fxpool(mp);
 
         return FX_RES_OK;
@@ -230,7 +228,7 @@ fx_error fxpool_destroy(fx_pool* mp)
   */
 void* fxpool_alloc(fx_pool* mp)
 {
-        if (unlikely(!CHECK_BIT(mp->pool_idx->set))) 
+        if (unlikely(!CHECK_BIT(mp->set_pool->set))) 
                 return NULL;
 
         if (unlikely(!mp)) 
@@ -262,7 +260,7 @@ void* fxpool_alloc(fx_pool* mp)
   */
 fx_error fxpool_dealloc(void* ptr, fx_pool* mp)
 {
-        if (unlikely(!CHECK_BIT(mp->pool_idx->set))) 
+        if (unlikely(!CHECK_BIT(mp->set_pool->set))) 
                 return FX_RES_FAIL;
 
         if (unlikely(!mp)) 
@@ -301,4 +299,19 @@ fx_error fxpool_reset(fx_pool* mp)
         mp->next_blk_addr       = mp->mem_start_addr;
 
         return FX_RES_OK;
+}
+
+fx_error fxpool_access(u64 index)
+{
+       return FX_RES_OK; 
+}
+
+u64 fxpool_capacity(fx_pool* mp)
+{
+        if (!mp)
+                return FX_RES_PARAM;
+        else if (!CHECK_BIT(mp->set_pool->set))
+                return FX_RES_FAIL;
+        else
+                return mp->pool_size;
 }

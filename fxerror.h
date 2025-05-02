@@ -26,6 +26,8 @@
 #ifndef __FX_ERROR__
 #define __FX_ERROR__
 
+#include "fxtypes.h"
+
 /*
  * Enum fx_error defines error codes for various
  * failures or exceptional situations in the system.
@@ -63,6 +65,12 @@ typedef enum fx_error
         FX_RES_ARCH_ALIGNMENT,
 } fx_error;
 
+
+typedef struct {
+    bool ok;        // true if the result is valid
+    fx_error err;   // only valid if ok == false
+    u64 value;      // only valid if ok == true
+} fx_result_u64;
 
 /*
  * fx_error_str - Convert an fx_error code into a human-readable string.
