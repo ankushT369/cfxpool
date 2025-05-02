@@ -37,7 +37,6 @@ extern "C" {
 
 #include "fxerror.h"
 #include "fxtypes.h"
-#include "list.h"
 
 /*
  * Enum alignment_t defines different memory alignment options used in 
@@ -112,13 +111,11 @@ typedef enum
  * for fast and efficient block-based memory management.
  */
 
-/* Pool index shadowing from user */
-typedef struct pool_set __pool_set;
 
 typedef struct
 {
-        /* pool identifier */
-        __pool_set*     set_pool;
+        /* pool set */
+        u8              set_pool;
 
         /* Basic fields */
         u32             total_blk;
@@ -138,9 +135,6 @@ typedef struct
         align_t         alignment;
         data_unit_t     unit;
         smode_t         mode;
-
-        /* list to connect different pools */
-        __pool_list     list;
 } fx_pool;
 
 
@@ -149,14 +143,14 @@ fx_error fxpool_create(size_t, data_unit_t, u32, align_t, fx_pool*, smode_t);
 fx_error fxpool_destroy(fx_pool*);
 void* fxpool_alloc(fx_pool*);
 fx_error fxpool_dealloc(void*, fx_pool*);
-fx_error fxpool_reset(fx_pool*);
+fx_error fxpool_clear(fx_pool*);
 
 /* introspects apis */
 u64 fxpool_capacity(fx_pool*);
 
 /* more advanced apis */
 void fxpool_merge();
-void fxpool_transfer();
+void fxpool_transfer_block();
 void fxpool_copy();
 
 /* debugging utility */
