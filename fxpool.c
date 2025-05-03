@@ -81,6 +81,30 @@ void init_fxpool(fx_pool* pool)
         pool->unit              = B;
 }
 
+
+__pool* __fxpool_create_large_pool(size_t total_pool_size)
+{
+#if defined(_MSC_VER) || defined(_WIN32) || defined(_WIN64)
+// Windows — leave this block empty
+
+#else
+#include <sys/mman.h>
+#include <fcntl.h>
+
+return (__pool*)mmap(NULL, total_pool_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+
+#endif
+}
+
+
+fx_error fxpool_create_large_pool(size_t each_blk_size, data_unit_t unit, u32 total_blk, fx_pool* mp, smode_t mode)
+{
+        if (!__fxpool_create_large_pool(each_blk_size * total_blk))
+                return FX_RES_MEMORY;
+
+        return FX_RES_OK;
+}
+
 void __register_pool(fx_pool* mp)
 {
         /* Checks error before creating a pool */
@@ -143,12 +167,14 @@ __pool* __fxpool_create(u64 size, align_t align)
   */
 fx_error fxpool_create(size_t each_blk_size, data_unit_t unit, u32 total_blk, align_t align, fx_pool* mp, smode_t mode) 
 {
-
         if (unlikely(!mp)) 
                 return FX_RES_PARAM;
 
         if (mp->pool_size != 0)
                 return FX_RES_FAIL;
+
+        if (each_blk_size * total_blk >= MB(64 << unit))
+                return fxpool_create_large_pool(each_blk_size, unit, total_blk, mp, mode);
         
         /* Register before creating a pool */
         __register_pool(mp);
@@ -304,10 +330,11 @@ fx_error fxpool_access(u64 index)
 
 u64 fxpool_capacity(fx_pool* mp)
 {
-        if (!mp)
+        if (unlikely(!mp))
                 return 0;
-        else if (!CHECK_BIT(mp->set_pool))
+        else if (unlikely(!CHECK_BIT(mp->set_pool)))
                 return 0;
         else
                 return mp->pool_size;
 }
+
