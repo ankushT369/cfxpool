@@ -9,7 +9,7 @@ void bug() {
 int main() {
         fx_pool pool = {0};
 
-        fx_error err = fxpool_create(4, B, 883, SYS_DEF, &pool, (FXPOOL_SIZE_AUTO_GROW | FXPOOL_SIZE_CUSTOM));
+        fx_error err = fxpool_create_large_pool(4, KB, 883, &pool, (FXPOOL_SIZE_AUTO_GROW | FXPOOL_SIZE_CUSTOM));
         fxpool_log(&pool);
         printf("%lu\n", fxpool_capacity(&pool));
 
@@ -22,6 +22,6 @@ int main() {
         printf("value : %d\n", *ptr);
 
         fxpool_dealloc(ptr, &pool);
-        fxpool_destroy(&pool);
+        //fxpool_destroy(&pool);
         return 0;
 }

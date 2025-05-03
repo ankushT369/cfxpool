@@ -81,6 +81,16 @@ void init_fxpool(fx_pool* pool)
         pool->unit              = B;
 }
 
+void __register_pool(fx_pool* mp)
+{
+        /* Checks error before creating a pool */
+        SET_BIT(mp->set_pool);
+}
+
+void __unregister_pool(fx_pool* mp)
+{
+        mp->set_pool            = 0;
+}
 
 __pool* __fxpool_create_large_pool(size_t total_pool_size)
 {
@@ -96,25 +106,46 @@ return (__pool*)mmap(NULL, total_pool_size, PROT_READ | PROT_WRITE, MAP_PRIVATE 
 #endif
 }
 
-
 fx_error fxpool_create_large_pool(size_t each_blk_size, data_unit_t unit, u32 total_blk, fx_pool* mp, smode_t mode)
 {
-        if (!__fxpool_create_large_pool(each_blk_size * total_blk))
+        if (unlikely(!mp)) 
+                return FX_RES_PARAM;
+
+        if (mp->pool_size != 0)
+                return FX_RES_FAIL;
+
+        /* Register before creating a pool */
+        __register_pool(mp);
+
+        if (unlikely(each_blk_size == 0 || each_blk_size > (1ULL << 48))) 
+                return FX_RES_BLK_SIZE;
+
+        if (unlikely(total_blk == 0)) 
+                return FX_RES_TOTAL_BLK;
+
+        if ((mode & (FXPOOL_SIZE_AUTO_GROW | FXPOOL_SIZE_CUSTOM)) == mode || 
+                (mode & (FXPOOL_SIZE_AUTO_GROW | FXPOOL_SIZE_DEFAULT)) == mode)
+                mp->resize = 1;
+        
+        __pool* mem_addr = __fxpool_create_large_pool(each_blk_size * total_blk);
+
+        if (!mem_addr)
                 return FX_RES_MEMORY;
+
+        mp->each_blk_size       = each_blk_size;
+        mp->total_blk           = total_blk;
+        mp->nr_free_blk         = total_blk;
+        mp->pool_size           = each_blk_size * total_blk;
+        mp->initalized_blk      = 0;
+        mp->alignment           = A4K;
+        mp->unit                = unit;
+
+        mp->mem_start_addr      = mem_addr;
+        mp->next_blk_addr       = mem_addr;
 
         return FX_RES_OK;
 }
 
-void __register_pool(fx_pool* mp)
-{
-        /* Checks error before creating a pool */
-        SET_BIT(mp->set_pool);
-}
-
-void __unregister_pool(fx_pool* mp)
-{
-        mp->set_pool            = 0;
-}
 
 __pool* __fxpool_aligned_alloc(size_t size, align_t alignment)
 {
@@ -204,7 +235,11 @@ fx_error fxpool_create(size_t each_blk_size, data_unit_t unit, u32 total_blk, al
         mp->pool_size           = aligned_size * total_blk;
         mp->initalized_blk      = 0;
 
-        mp->alignment           = align;
+        if (align == SYS_DEF)
+                mp->alignment   = FX_ARCH_PREFERRED_ALIGN;
+        else
+                mp->alignment   = align;
+
         mp->unit                = unit;
 
         /* Create the memory pool and allocate */
