@@ -211,7 +211,6 @@ fx_error fxpool_destroy(fx_pool* mp)
         }
 
         __unregister_pool(mp);
-
         init_fxpool(mp);
 
         return FX_RES_OK;

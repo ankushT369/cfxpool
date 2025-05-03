@@ -157,7 +157,7 @@ void fxpool_copy();
 void fxpool_log(fx_pool*);
 
 /* apis for large memory pools */
-fx_error fxpool_create_large_pool();
+fx_error fxpool_create_large_pool(size_t, data_unit_t, u32, fx_pool*, smode_t);
 void fxpool_destroy_large_pool();
 
 #ifdef __cplusplus
