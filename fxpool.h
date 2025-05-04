@@ -58,15 +58,6 @@ extern "C" {
  * boundaries, improving memory access performance.
  */
 
-/* Architecture detection */
-#if defined(__AVX512__)
-  #define FX_ARCH_PREFERRED_ALIGN 64
-#elif defined(__AVX__)
-  #define FX_ARCH_PREFERRED_ALIGN 32
-#else
-  #define FX_ARCH_PREFERRED_ALIGN 16
-#endif
-
 typedef enum
 {
         SYS_DEF = sizeof(void*),        // System Default alignment
@@ -85,6 +76,16 @@ typedef enum
         A2M     = 2 * 1024 * 1024,
         A1G     = 1024 * 1024 * 1024
 } align_t;
+
+
+/* Architecture detection */
+#if defined(__AVX512__)
+  #define FX_ARCH_PREFERRED_ALIGN A64
+#elif defined(__AVX__)
+  #define FX_ARCH_PREFERRED_ALIGN A32
+#else
+  #define FX_ARCH_PREFERRED_ALIGN A16
+#endif
 
 
 typedef enum
