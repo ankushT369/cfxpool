@@ -4,7 +4,7 @@ sysinfo _sysinfo;
 
 void init_system_info()
 {
-#if defined(_WIN32) || defined(_WIN64)
+#if FX_PLATFORM_WINDOWS
         /* Get page size on Windows */
         SYSTEM_INFO si;
         GetSystemInfo(&si);
