@@ -39,7 +39,8 @@ build/
 *.x86_64
 *.hex
 test/test_program
-benchmark/benchmark
+benchmark/benchmark_alloc
+benchmark/benchmark_create_pool
 
 # Debug files
 *.dSYM/
@@ -55,3 +56,7 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+
+# .txt files
+benchmark/benchmark_create_pool_results.txt
+benchmark/benchmark_alloc_results.txt
