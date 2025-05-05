@@ -19,11 +19,6 @@ typedef unsigned char uchar;
 #endif
 
 
-#define KB(size)        ((size) << 10)
-#define MB(size)        ((size) << 20)
-#define GB(size)        ((size) << 30)
-
-
 // Macro to set the 0th bit to 1
 #define SET_BIT(bf)   ((bf) |= 1U)
 

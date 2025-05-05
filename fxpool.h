@@ -38,6 +38,10 @@ extern "C" {
 #include "fxerror.h"
 #include "fxtypes.h"
 
+#define KB(size)        ((size) << 10)
+#define MB(size)        ((size) << 20)
+#define GB(size)        ((size) << 30)
+
 /*
  * Enum alignment_t defines different memory alignment options used in 
  * memory allocation functions to optimize access speed and prevent 
@@ -71,10 +75,10 @@ typedef enum
         A512    = 512,                  // 512-byte alignment
 
         /* Page/huge allocations (mmap-style) */
-        A2K     = 2048,
-        A4K     = 4096,                 // System page size
-        A2M     = 2 * 1024 * 1024,
-        A1G     = 1024 * 1024 * 1024
+        A2K     = KB(2),
+        A4K     = KB(4),                 // System page size
+        A2M     = MB(2),
+        A1G     = GB(1),
 } align_t;
 
 
@@ -168,6 +172,7 @@ u64 fxpool_capacity(fx_pool*);
 /* more advanced apis */
 void fxpool_merge();
 void fxpool_transfer_block();
+fx_error fxpool_copy_block(void*, fx_pool*);
 void fxpool_copy();
 
 /* debugging utility */

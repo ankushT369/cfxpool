@@ -390,3 +390,15 @@ u64 fxpool_capacity(fx_pool* mp)
                 return mp->pool_size;
 }
 
+fx_error fxpool_copy_block(void* block, fx_pool* dst_mp)
+{
+        if (unlikely(!dst_mp)) 
+                return FX_RES_PARAM;
+
+        if (unlikely(!block)) 
+                return FX_RES_PARAM;
+
+        block = fxpool_alloc(dst_mp);
+
+        return FX_RES_OK;
+}
