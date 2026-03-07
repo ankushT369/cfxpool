@@ -21,8 +21,18 @@ jobs:
     - name: Create build directory
       run: mkdir -p build
 
-    - name: check size
+    - name: Check size
       run: df -h
+
+    - name: docker usage
+      run: docker system df
+
+    - name: docker info
+      run: docker info | grep "Storage Driver"
+    - name: free -h
+      run: free -h
+    - name: nproc
+      run: nproc
 
     - name: Compile object files for 32-bit
       run: |
