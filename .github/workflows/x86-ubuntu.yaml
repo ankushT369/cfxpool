@@ -20,6 +20,7 @@ jobs:
 
     - name: Create build directory
       run: mkdir -p build
+      run: df -h
 
     - name: Compile object files for 32-bit
       run: |
