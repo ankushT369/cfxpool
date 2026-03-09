@@ -33,7 +33,6 @@ Default system allocators (like `malloc`) are slow and cause fragmentation over 
 
 > 📌 The allocator does not loop during initialization. Blocks are only initialized as needed.
 
----
 
 ## Step-by-Step Example
 
